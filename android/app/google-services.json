@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "551842597162",
+    "project_id": "audiomack26pm",
+    "storage_bucket": "audiomack26pm.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:551842597162:android:04d54605fe7352a845f653",
+        "android_client_info": {
+          "package_name": "com.example.s_onate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBJfoEIt9iU58vrlT35fbSF0p4b_3lsrqQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
