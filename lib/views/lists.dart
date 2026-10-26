@@ -298,7 +298,7 @@ class _ListsViewState extends State<ListsView> {
                 leading: ClipRRect(
                   borderRadius: BorderRadius.circular(AppRadius.radius200),
                   child: Image.asset(
-                    'assets/images/kaleko.jpeg',
+                    'assets/images/logo.png',
                     width: AppSpacing.spacing56,
                     height: AppSpacing.spacing56,
                     fit: BoxFit.cover,
