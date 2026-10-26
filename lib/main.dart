@@ -52,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
         leading: Padding(
           padding: const EdgeInsets.only(left: 16.0),
           child: Image.asset(
-            'images/logo.png',
+            'assets/images/logo.png',
             width: 32,
             height: 32,
             fit: BoxFit.contain,
@@ -175,7 +175,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 SizedBox(
                   width: double.infinity,
                   height: 180,
-                  child: Image.asset('images/logo.png', fit: BoxFit.cover),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    fit: BoxFit.cover,
+                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(AppSpacing.spacing16),
@@ -202,7 +205,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 SizedBox(
                   width: 120,
                   height: 120,
-                  child: Image.asset('images/kaleko.jpeg', fit: BoxFit.cover),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    fit: BoxFit.cover,
+                  ),
                 ),
                 Expanded(
                   child: Padding(
@@ -278,7 +284,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 SizedBox(
                   width: double.infinity,
                   height: 320,
-                  child: Image.asset('images/logo.png', fit: BoxFit.cover),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    fit: BoxFit.cover,
+                  ),
                 ),
                 Row(
                   children: [
