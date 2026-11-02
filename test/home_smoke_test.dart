@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:s_onate/main.dart';
+import 'package:audiomack/main.dart';
 
 void main() {
   for (final size in [const Size(390, 844), const Size(1280, 720)]) {

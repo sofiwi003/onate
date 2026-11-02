@@ -56,22 +56,24 @@ class DefaultFirebaseOptions {
     projectId: 'audiomack26pm',
     storageBucket: 'audiomack26pm.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyA3UedCrpgpqfihSUvIN6wkUkrTWpHjEJI',
     appId: '1:551842597162:ios:bf7f6e18c87575ae45f653',
     messagingSenderId: '551842597162',
     projectId: 'audiomack26pm',
     storageBucket: 'audiomack26pm.firebasestorage.app',
+    androidClientId: '551842597162-vqeelra7tc3hevl6arl4c5igagjs4aku.apps.googleusercontent.com',
+    iosClientId: '551842597162-7suh6kqu1n3oj4h2rfvfpj5vrukd46s6.apps.googleusercontent.com',
     iosBundleId: 'com.example.sOnate',
   );
-
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyA3UedCrpgpqfihSUvIN6wkUkrTWpHjEJI',
     appId: '1:551842597162:ios:bf7f6e18c87575ae45f653',
     messagingSenderId: '551842597162',
     projectId: 'audiomack26pm',
     storageBucket: 'audiomack26pm.firebasestorage.app',
+    androidClientId: '551842597162-vqeelra7tc3hevl6arl4c5igagjs4aku.apps.googleusercontent.com',
+    iosClientId: '551842597162-7suh6kqu1n3oj4h2rfvfpj5vrukd46s6.apps.googleusercontent.com',
     iosBundleId: 'com.example.sOnate',
   );
 

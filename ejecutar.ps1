@@ -1,11 +1,15 @@
 param(
-    [string]$Dispositivo = 'chrome'
+    [string]$Dispositivo
 )
 $ErrorActionPreference = 'Stop'
 Push-Location $PSScriptRoot
 try {
     & (Join-Path $PSScriptRoot 'preparar.ps1')
-    & flutter run -d $Dispositivo
+    if ($Dispositivo) {
+        & flutter run -d $Dispositivo
+    } else {
+        & flutter run
+    }
     if ($LASTEXITCODE -ne 0) {
         throw 'Flutter no pudo iniciar la aplicación. Revisa el error anterior.'
     }

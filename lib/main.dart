@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 import 'theme/theme.dart';
 import 'views/lists.dart';
+import 'auth/auth_gate.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  await GoogleSignIn.instance.initialize();
 
   runApp(const MainApp());
 }
@@ -20,8 +25,9 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      title: 'Audiomack',
       theme: audioMack,
-      home: const HomeScreen(),
+      home: const AuthGate(),
     );
   }
 }
@@ -112,279 +118,134 @@ class _HomeScreenState extends State<HomeScreen> {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.spacing16),
         children: [
-          Text('Card básica', style: text.headlineLarge),
-          const SizedBox(height: AppSpacing.spacing16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.spacing16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Título de la card', style: text.titleLarge),
-                  const SizedBox(height: AppSpacing.spacing8),
-                  Text(
-                    'Una card puede tener varias configuraciones.',
-                    style: text.bodyMedium,
-                  ),
-                ],
+          const SizedBox(height: AppSpacing.spacing40),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Top picks for you', style: text.titleLarge),
+              Text(
+                'See all',
+                style: text.titleLarge?.copyWith(color: colors.primary),
               ),
-            ),
+            ],
           ),
-          const SizedBox(height: AppSpacing.spacing32),
 
-          Text('Card con icono', style: text.headlineLarge),
-          const SizedBox(height: AppSpacing.spacing16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.spacing16),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: colors.primaryContainer,
-                    child: Icon(
-                      Icons.music_note,
-                      color: colors.onPrimaryContainer,
+          const SizedBox(height: AppSpacing.spacing12),
+
+          // Contenedor con altura fija para la lista horizontal de cards
+          SizedBox(
+            height: 200, // Altura adecuada para la imagen + textos
+            child: StreamBuilder<QuerySnapshot>(
+              // Reemplaza 'top_picks' con el nombre de tu colección en Firebase
+              stream: FirebaseFirestore.instance
+                  .collection('canciones')
+                  .snapshots(),
+              builder: (context, snapshot) {
+                // 1. Manejo de estados (Carga o Error)
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Text(
+                      'Error al cargar los datos',
+                      style: TextStyle(color: AppColors.error400),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.spacing16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Música', style: text.titleLarge),
-                        Text(
-                          'Dos líneas, contenido secundario',
-                          style: text.bodyMedium,
-                        ),
-                      ],
+                  );
+                }
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.primary500,
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.spacing32),
+                  );
+                }
 
-          Text('Card con imagen', style: text.headlineLarge),
-          const SizedBox(height: AppSpacing.spacing16),
-          Card(
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  height: 180,
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(AppSpacing.spacing16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Kaleko Urdangak', style: text.titleLarge),
-                      const SizedBox(height: AppSpacing.spacing8),
-                      Text('1200', style: text.bodyMedium),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.spacing32),
+                // 2. Obtener documentos
+                final docs = snapshot.data!.docs;
 
-          Text('Card horizontal', style: text.headlineLarge),
-          const SizedBox(height: AppSpacing.spacing16),
-          Card(
-            clipBehavior: Clip.antiAlias,
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 120,
-                  height: 120,
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.spacing16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Kaleko Urdangak', style: text.titleLarge),
-                        const SizedBox(height: AppSpacing.spacing8),
-                        Text(
-                          'Card horizontal con miniatura y contenido',
-                          style: text.bodyMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.spacing32),
-
-          Text('Card con acciones', style: text.headlineLarge),
-          const SizedBox(height: AppSpacing.spacing16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.spacing16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Nueva Canción', style: text.titleLarge),
-                  const SizedBox(height: AppSpacing.spacing8),
-                  Text('Botones en una card', style: text.bodyMedium),
-                  const SizedBox(height: AppSpacing.spacing16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () {},
-                        child: const Text('Cancelar'),
+                if (docs.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'No hay elementos',
+                      style: AppTypography.body1.copyWith(
+                        color: AppColors.neutral400,
                       ),
-                      FilledButton(
-                        onPressed: () {},
-                        child: const Text('Ver más'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.spacing32),
+                    ),
+                  );
+                }
 
-          Text('Card tipo redes sociales', style: text.headlineLarge),
-          const SizedBox(height: AppSpacing.spacing16),
-          Card(
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: colors.primary,
-                    child: Icon(Icons.person, color: colors.onPrimary),
+                // 3. ListView horizontal usando tu sistema de diseño
+                return ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.spacing16,
                   ),
-                  title: const Text('Kaleko Urdangak'),
-                  subtitle: const Text('Euskal Herria'),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.more_vert),
-                    onPressed: () {},
-                  ),
-                ),
-                SizedBox(
-                  width: double.infinity,
-                  height: 320,
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.favorite_border),
-                      onPressed: () {},
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.chat_bubble_outline),
-                      onPressed: () {},
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.send_outlined),
-                      onPressed: () {},
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.bookmark_border),
-                      onPressed: () {},
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.spacing16,
-                    0,
-                    AppSpacing.spacing16,
-                    AppSpacing.spacing16,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('1.234 Me gusta', style: text.labelLarge),
-                      const SizedBox(height: AppSpacing.spacing8),
-                      Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text: 'Kaleko Urdangak ',
-                              style: text.labelLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                  itemCount: docs.length,
+                  itemBuilder: (context, index) {
+                    final data = docs[index].data() as Map<String, dynamic>;
+                    final title = data['title'] ?? 'Sin título';
+                    final artist = data['artist'] ?? 'Desconocido';
+                    final imageUrl = data['imageUrl'] ?? '';
+
+                    return Container(
+                      width: 140,
+                      margin: const EdgeInsets.only(
+                        right: AppSpacing.spacing12,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Imagen con tus radios predefinidos (AppRadius.radius400 = 16px)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.radius400,
                             ),
-                            TextSpan(
-                              text: 'Nueva publicación.',
-                              style: text.bodyMedium,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.spacing32),
+                            child: imageUrl.isNotEmpty
+                                ? Image.network(
+                                    imageUrl,
+                                    height: 140,
+                                    width: 140,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Container(
+                                    height: 140,
+                                    width: 140,
+                                    color: AppColors.neutral700,
+                                    child: const Icon(
+                                      Icons.music_note,
+                                      color: AppColors.neutral300,
+                                    ),
+                                  ),
+                          ),
+                          const SizedBox(height: AppSpacing.spacing8),
 
-          Card(
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: colors.secondaryContainer,
-                    child: const Text('K'),
-                  ),
-                  title: const Text('Kaleko Urdangak'),
-                  subtitle: const Text('Hace 2 horas'),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.more_vert),
-                    onPressed: () {},
-                  ),
-                ),
-                SizedBox(
-                  width: double.infinity,
-                  height: 240,
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(AppSpacing.spacing16),
-                  child: Text(
-                    'Puede ser también sin tanto texto.',
-                    style: text.bodyMedium,
-                  ),
-                ),
-              ],
+                          // Título principal usando AppTypography.label1 o body1
+                          Text(
+                            title,
+                            style: AppTypography.label1.copyWith(
+                              color: AppColors.neutral0,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+
+                          // Subtítulo usando AppTypography.caption o body2
+                          Text(
+                            artist,
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.neutral300,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
             ),
           ),
-          const SizedBox(height: AppSpacing.spacing32),
         ],
       ),
-
       // Barra de navegación inferior
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,

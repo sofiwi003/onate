@@ -12,7 +12,20 @@
           "package_name": "com.example.s_onate"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "551842597162-vqeelra7tc3hevl6arl4c5igagjs4aku.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.s_onate",
+            "certificate_hash": "0cf2580c7c1ed19086a300c363766e264b007528"
+          }
+        },
+        {
+          "client_id": "551842597162-gm5sg7j0j4phb955ir6jj32ct28olu1s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBJfoEIt9iU58vrlT35fbSF0p4b_3lsrqQ"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "551842597162-gm5sg7j0j4phb955ir6jj32ct28olu1s.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "551842597162-7suh6kqu1n3oj4h2rfvfpj5vrukd46s6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.sOnate"
+              }
+            }
+          ]
         }
       }
     }

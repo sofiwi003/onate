@@ -1,6 +1,6 @@
 {
-    "name": "s_onate",
-    "short_name": "s_onate",
+    "name": "Audiomack",
+    "short_name": "Audiomack",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
