@@ -1,0 +1,17 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="33" height="40" viewBox="0 0 33 40" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="play" clip-path="url(#clip0_0_107)">
+<g id="Vector">
+<use xlink:href="#stroke0_0_107" fill="#765FFF"/>
+<mask id="stroke1_0_107" fill="white">
+<use xlink:href="#stroke0_0_107"/>
+</mask>
+<path d="M4.125 0C1.84766 0 0 1.91964 0 4.28571V35.7143C0 38.0804 1.84766 40 4.125 40H9.625C11.9023 40 13.75 38.0804 13.75 35.7143V4.28571C13.75 1.91964 11.9023 0 9.625 0H4.125ZM23.375 0C21.0977 0 19.25 1.91964 19.25 4.28571V35.7143C19.25 38.0804 21.0977 40 23.375 40H28.875C31.1523 40 33 38.0804 33 35.7143V4.28571C33 1.91964 31.1523 0 28.875 0H23.375Z" stroke-width="2" stroke="#765FFF" mask="url(#stroke1_0_107)"/>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_0_107">
+<rect width="33" height="40" fill="white"/>
+</clipPath>
+<path id="stroke0_0_107" d="M4.125 0C1.84766 0 0 1.91964 0 4.28571V35.7143C0 38.0804 1.84766 40 4.125 40H9.625C11.9023 40 13.75 38.0804 13.75 35.7143V4.28571C13.75 1.91964 11.9023 0 9.625 0H4.125ZM23.375 0C21.0977 0 19.25 1.91964 19.25 4.28571V35.7143C19.25 38.0804 21.0977 40 23.375 40H28.875C31.1523 40 33 38.0804 33 35.7143V4.28571C33 1.91964 31.1523 0 28.875 0H23.375Z"/>
+</defs>
+</svg>

@@ -14,9 +14,11 @@ dependencies:
   flex_color_scheme: ^9.0.0
   flutter:
     sdk: flutter
+  flutter_svg: ^2.3.2
   google_fonts: ^9.0.0
   google_sign_in: ^7.2.0
   image_picker: ^1.2.4
+  just_audio: ^0.10.6
   path_provider: ^2.1.6
   video_player: ^2.14.1
 
@@ -29,3 +31,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/logo.png
+    - assets/icons/

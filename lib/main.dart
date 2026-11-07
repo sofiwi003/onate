@@ -1,20 +1,20 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:just_audio/just_audio.dart';
+
+import 'auth/auth_gate.dart';
+import 'firebase_options.dart';
 import 'theme/theme.dart';
 import 'views/lists.dart';
-import 'auth/auth_gate.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'views/player_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
   await GoogleSignIn.instance.initialize();
-
   runApp(const MainApp());
 }
 
@@ -32,6 +32,30 @@ class MainApp extends StatelessWidget {
   }
 }
 
+// Datos sencillos para pasar una canción desde Home al reproductor.
+class Song {
+  const Song({
+    required this.title,
+    required this.artist,
+    required this.imageUrl,
+    this.audioUrl = '',
+  });
+
+  final String title;
+  final String artist;
+  final String imageUrl;
+  final String audioUrl;
+
+  factory Song.fromMap(Map<String, dynamic> data) {
+    return Song(
+      title: (data['title'] ?? data['titulo'] ?? 'Sin título').toString(),
+      artist: (data['artist'] ?? data['subtitulo'] ?? 'Desconocido').toString(),
+      imageUrl: (data['imageUrl'] ?? '').toString(),
+      audioUrl: (data['audioUrl'] ?? '').toString(),
+    );
+  }
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -41,243 +65,449 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  final AudioPlayer _audioPlayer = AudioPlayer();
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
 
     return Scaffold(
       backgroundColor: colors.surface,
-
-      // App bar
       appBar: AppBar(
         backgroundColor: colors.surface,
         elevation: 0,
-
         leading: Padding(
-          padding: const EdgeInsets.only(left: 16.0),
-          child: Image.asset(
-            'assets/images/logo.png',
-            width: 32,
-            height: 32,
-            fit: BoxFit.contain,
-          ),
+          padding: const EdgeInsets.only(left: 16),
+          child: Image.asset('assets/images/logo.png', fit: BoxFit.contain),
         ),
-
         actions: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: colors.surfaceContainer,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.notifications_none,
-              color: colors.onSurface,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.spacing8),
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: colors.surfaceContainer,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.person_outline,
-              color: colors.onSurface,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.spacing16),
+          _roundAction(Icons.notifications_none, colors),
+          const SizedBox(width: 8),
+          _roundAction(Icons.person_outline, colors),
+          const SizedBox(width: 16),
         ],
-
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),
-          child: Container(
+          child: SizedBox(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.spacing16,
-            ),
-            child: Text(
-              'Home',
-              style: text.headlineLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Home',
+                style: AppTypography.headline1.copyWith(color: Colors.white),
               ),
             ),
           ),
         ),
       ),
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: FirebaseFirestore.instance.collection('canciones').snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Center(child: Text('Error al cargar las canciones'));
+          }
+          if (!snapshot.hasData) {
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.primary500),
+            );
+          }
 
-      // Contenido scrolleable con todas las cards
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.spacing16),
-        children: [
-          const SizedBox(height: AppSpacing.spacing40),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          final songs = snapshot.data!.docs;
+          final topPicks =
+              songs.where((doc) {
+                  return doc.data()['homeSection'] == 'topPicks';
+                }).toList()
+                ..sort((a, b) => _order(a.data()).compareTo(_order(b.data())));
+          final recent =
+              songs.where((doc) {
+                  return doc.data()['homeSection'] == 'recentlyPlayed';
+                }).toList()
+                ..sort((a, b) => _order(a.data()).compareTo(_order(b.data())));
+          final madeForYou = songs.where((doc) {
+            final song = Song.fromMap(doc.data());
+            return song.title == 'Baby' && song.artist == 'Justin Bieber';
+          }).toList();
+          final favoriteArtists = madeForYou
+              .map((doc) => Song.fromMap(doc.data()).artist)
+              .toSet()
+              .toList();
+
+          return ScrollConfiguration(
+            behavior: const MaterialScrollBehavior().copyWith(
+              overscroll: false,
+            ),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
+              children: [
+                _buildSongSection('Top picks for you', topPicks, wide: true),
+                const SizedBox(height: 18),
+                _buildSongSection(
+                  'Recently played',
+                  recent,
+                  subtitle: 'Based on what you hear',
+                ),
+                const SizedBox(height: 32),
+                _buildSongSection('Made for you', madeForYou),
+                const SizedBox(height: 32),
+                _buildArtistSection(favoriteArtists),
+              ],
+            ),
+          );
+        },
+      ),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [_miniPlayerInBar(context), _navigationBar(colors)],
+      ),
+    );
+  }
+
+  int _order(Map<String, dynamic> data) =>
+      data['homeOrder'] is int ? data['homeOrder'] as int : 0;
+
+  Widget _roundAction(IconData icon, ColorScheme colors) {
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        color: colors.surfaceContainer,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, color: colors.onSurface, size: 20),
+    );
+  }
+
+  Widget _buildSongSection(
+    String title,
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> songs, {
+    bool wide = false,
+    String? subtitle,
+  }) {
+    final cardWidth = wide ? 194.0 : 120.0;
+    final imageWidth = wide ? 178.0 : 104.0;
+    final imageHeight = 104.0;
+    final cardHeight = 161.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: subtitle == null ? 34 : 52,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Top picks for you', style: text.titleLarge),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AppTypography.subtitle2.copyWith(
+                        color: Colors.white,
+                      ),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.neutral300,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
               Text(
                 'See all',
-                style: text.titleLarge?.copyWith(color: colors.primary),
+                style: AppTypography.body2.copyWith(
+                  color: AppColors.primary400,
+                ),
               ),
             ],
           ),
-
-          const SizedBox(height: AppSpacing.spacing12),
-
-          // Contenedor con altura fija para la lista horizontal de cards
-          SizedBox(
-            height: 200, // Altura adecuada para la imagen + textos
-            child: StreamBuilder<QuerySnapshot>(
-              // Reemplaza 'top_picks' con el nombre de tu colección en Firebase
-              stream: FirebaseFirestore.instance
-                  .collection('canciones')
-                  .snapshots(),
-              builder: (context, snapshot) {
-                // 1. Manejo de estados (Carga o Error)
-                if (snapshot.hasError) {
-                  return const Center(
-                    child: Text(
-                      'Error al cargar los datos',
-                      style: TextStyle(color: AppColors.error400),
-                    ),
-                  );
-                }
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.primary500,
-                    ),
-                  );
-                }
-
-                // 2. Obtener documentos
-                final docs = snapshot.data!.docs;
-
-                if (docs.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'No hay elementos',
-                      style: AppTypography.body1.copyWith(
-                        color: AppColors.neutral400,
+        ),
+        SizedBox(
+          height: cardHeight,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: songs.length,
+            itemBuilder: (context, index) {
+              final song = Song.fromMap(songs[index].data());
+              return SizedBox(
+                width: cardWidth,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(
+                          AppRadius.radius200,
+                        ),
+                        child: SizedBox(
+                          width: imageWidth,
+                          height: imageHeight,
+                          child: _cover(song.imageUrl),
+                        ),
                       ),
-                    ),
-                  );
-                }
-
-                // 3. ListView horizontal usando tu sistema de diseño
-                return ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.spacing16,
+                      const SizedBox(height: 6),
+                      Text(
+                        song.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.label2.copyWith(
+                          color: Colors.white,
+                        ),
+                      ),
+                      Text(
+                        song.artist,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.neutral300,
+                        ),
+                      ),
+                    ],
                   ),
-                  itemCount: docs.length,
-                  itemBuilder: (context, index) {
-                    final data = docs[index].data() as Map<String, dynamic>;
-                    final title = data['title'] ?? 'Sin título';
-                    final artist = data['artist'] ?? 'Desconocido';
-                    final imageUrl = data['imageUrl'] ?? '';
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
 
-                    return Container(
-                      width: 140,
-                      margin: const EdgeInsets.only(
-                        right: AppSpacing.spacing12,
+  Widget _cover(String url) {
+    if (url.isEmpty) {
+      return Container(
+        color: AppColors.neutral700,
+        child: const Icon(Icons.music_note, color: AppColors.neutral300),
+      );
+    }
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => Container(
+        color: AppColors.neutral700,
+        child: const Icon(Icons.music_note, color: AppColors.neutral300),
+      ),
+    );
+  }
+
+  Widget _buildArtistSection(List<String> artists) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Your favorite artist',
+          style: AppTypography.subtitle2.copyWith(color: Colors.white),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 104,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: artists.length,
+            itemBuilder: (context, index) {
+              return SizedBox(
+                width: 88,
+                child: Column(
+                  children: [
+                    const CircleAvatar(
+                      radius: 32,
+                      backgroundColor: AppColors.neutral700,
+                      child: Icon(
+                        Icons.person,
+                        color: AppColors.neutral300,
+                        size: 32,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Imagen con tus radios predefinidos (AppRadius.radius400 = 16px)
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.radius400,
-                            ),
-                            child: imageUrl.isNotEmpty
-                                ? Image.network(
-                                    imageUrl,
-                                    height: 140,
-                                    width: 140,
-                                    fit: BoxFit.cover,
-                                  )
-                                : Container(
-                                    height: 140,
-                                    width: 140,
-                                    color: AppColors.neutral700,
-                                    child: const Icon(
-                                      Icons.music_note,
-                                      color: AppColors.neutral300,
-                                    ),
-                                  ),
-                          ),
-                          const SizedBox(height: AppSpacing.spacing8),
-
-                          // Título principal usando AppTypography.label1 o body1
-                          Text(
-                            title,
-                            style: AppTypography.label1.copyWith(
-                              color: AppColors.neutral0,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-
-                          // Subtítulo usando AppTypography.caption o body2
-                          Text(
-                            artist,
-                            style: AppTypography.caption.copyWith(
-                              color: AppColors.neutral300,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      artists[index],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.neutral300,
                       ),
-                    );
-                  },
-                );
-              },
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _miniPlayerInBar(BuildContext context) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('canciones')
+          .where('isMiniPlayerCurrent', isEqualTo: true)
+          .limit(1)
+          .snapshots(),
+      builder: (context, snapshot) {
+        Song song = const Song(
+          title: 'Baby',
+          artist: 'Justin Bieber',
+          imageUrl: '',
+        );
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          song = Song.fromMap(snapshot.data!.docs.first.data());
+        }
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
+          child: GestureDetector(
+            onTap: () => _openPlayer(context, song),
+            child: Container(
+              height: 54,
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainer,
+                borderRadius: BorderRadius.circular(AppRadius.radius300),
+              ),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: _cover(song.imageUrl),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          song.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.label2.copyWith(
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          song.artist,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.neutral300,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  StreamBuilder<PlayerState>(
+                    stream: _audioPlayer.playerStateStream,
+                    builder: (context, playerSnapshot) {
+                      final isPlaying = playerSnapshot.data?.playing ?? false;
+                      return IconButton(
+                        onPressed: () {
+                          if (isPlaying) {
+                            _audioPlayer.pause();
+                          } else if (_audioPlayer.audioSource != null) {
+                            _audioPlayer.play();
+                          } else {
+                            _openPlayer(context, song);
+                          }
+                        },
+                        icon: Icon(
+                          isPlaying
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                          color: AppColors.primary500,
+                          size: 28,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints.tightFor(
+                          width: 36,
+                          height: 40,
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
-      ),
-      // Barra de navegación inferior
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
+        );
+      },
+    );
+  }
 
-          if (index == 2) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ListsView()),
-            );
-          }
+  Widget _navigationBar(ColorScheme colors) {
+    return NavigationBar(
+      height: 60,
+      backgroundColor: colors.surfaceDim,
+      indicatorColor: Colors.transparent,
+      selectedIndex: _selectedIndex,
+      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+      onDestinationSelected: (index) {
+        setState(() => _selectedIndex = index);
+        if (index == 2) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ListsView()),
+          );
+        }
+      },
+      destinations: [
+        _destination('assets/icons/home.svg', 'Home'),
+        _destination('assets/icons/discover.svg', 'Discover'),
+        _destination('assets/icons/library.svg', 'Library'),
+        _destination('assets/icons/search.svg', 'Search'),
+      ],
+    );
+  }
+
+  NavigationDestination _destination(String asset, String label) {
+    Widget icon(Color color) => SvgPicture.asset(
+      asset,
+      width: 21,
+      height: 21,
+      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+    );
+    return NavigationDestination(
+      icon: icon(AppColors.neutral300),
+      selectedIcon: icon(AppColors.primary500),
+      label: label,
+    );
+  }
+
+  void _openPlayer(BuildContext context, Song song) {
+    Navigator.of(context).push(
+      PageRouteBuilder<void>(
+        pageBuilder: (context, animation, secondaryAnimation) => PlayerScreen(
+          audioPlayer: _audioPlayer,
+          title: song.title,
+          artist: song.artist,
+          imageUrl: song.imageUrl,
+          audioUrl: song.audioUrl,
+        ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final slide = Tween<Offset>(
+            begin: const Offset(0, 1),
+            end: Offset.zero,
+          ).chain(CurveTween(curve: Curves.easeOutCubic));
+          return SlideTransition(
+            position: animation.drive(slide),
+            child: child,
+          );
         },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.groups_outlined),
-            selectedIcon: Icon(Icons.groups),
-            label: 'Comunidad',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.search_outlined),
-            selectedIcon: Icon(Icons.search),
-            label: 'Buscar',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.format_list_bulleted_outlined),
-            selectedIcon: Icon(Icons.format_list_bulleted),
-            label: 'Listas',
-          ),
-        ],
       ),
     );
   }
