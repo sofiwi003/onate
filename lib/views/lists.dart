@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/theme.dart';
+import 'playlists.dart';
 
 class ListsView extends StatefulWidget {
   const ListsView({super.key});
@@ -249,7 +250,21 @@ class _ListsViewState extends State<ListsView> {
 
     return Scaffold(
       // app bar
-      appBar: AppBar(title: const Text('Listas')),
+      appBar: AppBar(
+        title: const Text('Listas'),
+        actions: [
+          IconButton(
+            tooltip: 'Playlists',
+            icon: const Icon(Icons.queue_music_outlined),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PlaylistsView()),
+              );
+            },
+          ),
+        ],
+      ),
 
       // lista de canciones desde firestore
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(

@@ -189,8 +189,9 @@ class _HomeScreenState extends State<HomeScreen> {
     bool wide = false,
     String? subtitle,
   }) {
-    final cardWidth = wide ? 194.0 : 120.0;
     final imageWidth = wide ? 178.0 : 104.0;
+    final albumSpacing = subtitle == null ? 16.0 : 24.0;
+    final cardWidth = imageWidth + albumSpacing;
     final imageHeight = 104.0;
     final cardHeight = 161.0;
 
@@ -243,7 +244,7 @@ class _HomeScreenState extends State<HomeScreen> {
               return SizedBox(
                 width: cardWidth,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: EdgeInsets.only(right: albumSpacing),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

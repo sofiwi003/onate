@@ -165,240 +165,233 @@ class _PlayerScreenState extends State<PlayerScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final coverSize = math
-                .min(
-                  (constraints.maxWidth - 36) * 0.855,
-                  constraints.maxHeight * 0.54,
-                )
+                .min((constraints.maxWidth - 36) * 0.855, 460.0)
                 .toDouble();
 
-            return SingleChildScrollView(
-              physics: const ClampingScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _circleButton(
-                        'assets/icons/player_back_circle.svg',
-                        () => Navigator.pop(context),
-                      ),
-                      _circleButton(
-                        'assets/icons/player_share_circle.svg',
-                        () {},
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: (constraints.maxHeight * 0.06)
-                        .clamp(24.0, 48.0)
-                        .toDouble(),
-                  ),
-                  Center(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.radius500),
-                      child: SizedBox(
-                        width: coverSize,
-                        height: coverSize,
-                        child: Image.network(
-                          widget.imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                                color: AppColors.neutral700,
-                                child: const Icon(
-                                  Icons.music_note,
-                                  color: AppColors.neutral300,
-                                  size: 64,
-                                ),
-                              ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: (constraints.maxHeight * 0.045)
-                        .clamp(20.0, 36.0)
-                        .toDouble(),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.15,
-                                  color: AppColors.neutral0,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                widget.artist,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w300,
-                                  letterSpacing: 0.4,
-                                  color: _mutedIconColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => setState(() => _liked = !_liked),
-                          child: _liked
-                              ? SvgPicture.asset(
-                                  'assets/icons/player_like_circle.svg',
-                                  width: 36,
-                                  height: 36,
-                                )
-                              : Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.neutral600,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.favorite_border,
-                                    color: AppColors.neutral0,
-                                    size: 20,
-                                  ),
-                                ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(
-                    height: (constraints.maxHeight * 0.035)
-                        .clamp(16.0, 28.0)
-                        .toDouble(),
-                  ),
-                  SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      trackHeight: 3,
-                      thumbShape: const RoundSliderThumbShape(
-                        enabledThumbRadius: 7,
-                      ),
-                      overlayShape: const RoundSliderOverlayShape(
-                        overlayRadius: 13,
-                      ),
-                    ),
-                    child: Slider(
-                      value: _duration.inMilliseconds == 0
-                          ? 0
-                          : _position.inMilliseconds
-                                .clamp(0, _duration.inMilliseconds)
-                                .toDouble(),
-                      max: _duration.inMilliseconds == 0
-                          ? 1
-                          : _duration.inMilliseconds.toDouble(),
-                      activeColor: _playerAccentColor,
-                      inactiveColor: AppColors.neutral500,
-                      thumbColor: AppColors.neutral0,
-                      onChanged: _audioLoaded
-                          ? (value) => _player.seek(
-                              Duration(milliseconds: value.round()),
-                            )
-                          : null,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Row(
+            return ScrollConfiguration(
+              behavior: const MaterialScrollBehavior().copyWith(
+                overscroll: false,
+              ),
+              child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          _time(_position),
-                          style: AppTypography.caption.copyWith(
-                            color: _mutedIconColor,
-                          ),
+                        _circleButton(
+                          'assets/icons/player_back_circle.svg',
+                          () => Navigator.pop(context),
                         ),
-                        Text(
-                          _time(_duration),
-                          style: AppTypography.caption.copyWith(
-                            color: _mutedIconColor,
-                          ),
+                        _circleButton(
+                          'assets/icons/player_share_circle.svg',
+                          () {},
                         ),
                       ],
                     ),
-                  ),
-                  SizedBox(
-                    height: (constraints.maxHeight * 0.055)
-                        .clamp(24.0, 42.0)
-                        .toDouble(),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _svgControl(
-                        'assets/icons/player_shuffle.svg',
-                        width: 20,
-                        height: 20,
-                        color: _shuffle ? _playerAccentColor : _mutedIconColor,
-                        onTap: () async {
-                          final shuffle = !_shuffle;
-                          setState(() => _shuffle = shuffle);
-                          await _player.setShuffleModeEnabled(shuffle);
-                        },
-                      ),
-                      const SizedBox(width: 24),
-                      _seekButton(previous: true),
-                      const SizedBox(width: 24),
-                      GestureDetector(
-                        onTap: _togglePlayback,
+                    const SizedBox(height: 48),
+                    Center(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(
+                          AppRadius.radius500,
+                        ),
                         child: SizedBox(
-                          width: 56,
-                          height: 56,
-                          child: Center(
-                            child: _loading
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      color: _playerAccentColor,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : _playing
-                                ? _pauseIcon()
-                                : const Icon(
-                                    Icons.play_arrow_rounded,
-                                    color: _mutedIconColor,
-                                    size: 56,
+                          width: coverSize,
+                          height: coverSize,
+                          child: Image.network(
+                            widget.imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                                  color: AppColors.neutral700,
+                                  child: const Icon(
+                                    Icons.music_note,
+                                    color: AppColors.neutral300,
+                                    size: 64,
                                   ),
+                                ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 24),
-                      _seekButton(previous: false),
-                      const SizedBox(width: 24),
-                      _svgControl(
-                        'assets/icons/player_repeat.svg',
-                        width: 22,
-                        height: 22,
-                        color: _repeat ? _playerAccentColor : _mutedIconColor,
-                        onTap: () async {
-                          final repeat = !_repeat;
-                          setState(() => _repeat = repeat);
-                          await _player.setLoopMode(
-                            repeat ? LoopMode.one : LoopMode.off,
-                          );
-                        },
+                    ),
+                    const SizedBox(height: 28),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.15,
+                                    color: AppColors.neutral0,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  widget.artist,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w300,
+                                    letterSpacing: 0.4,
+                                    color: _mutedIconColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () => setState(() => _liked = !_liked),
+                            child: _liked
+                                ? SvgPicture.asset(
+                                    'assets/icons/player_like_circle.svg',
+                                    width: 36,
+                                    height: 36,
+                                  )
+                                : Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.neutral600,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.favorite_border,
+                                      color: AppColors.neutral0,
+                                      size: 20,
+                                    ),
+                                  ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                    const SizedBox(height: 20),
+                    SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 3,
+                        thumbShape: const RoundSliderThumbShape(
+                          enabledThumbRadius: 7,
+                        ),
+                        overlayShape: const RoundSliderOverlayShape(
+                          overlayRadius: 13,
+                        ),
+                      ),
+                      child: Slider(
+                        value: _duration.inMilliseconds == 0
+                            ? 0
+                            : _position.inMilliseconds
+                                  .clamp(0, _duration.inMilliseconds)
+                                  .toDouble(),
+                        max: _duration.inMilliseconds == 0
+                            ? 1
+                            : _duration.inMilliseconds.toDouble(),
+                        activeColor: _playerAccentColor,
+                        inactiveColor: AppColors.neutral500,
+                        thumbColor: AppColors.neutral0,
+                        onChanged: _audioLoaded
+                            ? (value) => _player.seek(
+                                Duration(milliseconds: value.round()),
+                              )
+                            : null,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _time(_position),
+                            style: AppTypography.caption.copyWith(
+                              color: _mutedIconColor,
+                            ),
+                          ),
+                          Text(
+                            _time(_duration),
+                            style: AppTypography.caption.copyWith(
+                              color: _mutedIconColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 42),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _svgControl(
+                          'assets/icons/player_shuffle.svg',
+                          width: 20,
+                          height: 20,
+                          color: _shuffle
+                              ? _playerAccentColor
+                              : _mutedIconColor,
+                          onTap: () async {
+                            final shuffle = !_shuffle;
+                            setState(() => _shuffle = shuffle);
+                            await _player.setShuffleModeEnabled(shuffle);
+                          },
+                        ),
+                        const SizedBox(width: 24),
+                        _seekButton(previous: true),
+                        const SizedBox(width: 24),
+                        GestureDetector(
+                          onTap: _togglePlayback,
+                          child: SizedBox(
+                            width: 56,
+                            height: 56,
+                            child: Center(
+                              child: _loading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: _playerAccentColor,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : _playing
+                                  ? _pauseIcon()
+                                  : const Icon(
+                                      Icons.play_arrow_rounded,
+                                      color: _mutedIconColor,
+                                      size: 56,
+                                    ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 24),
+                        _seekButton(previous: false),
+                        const SizedBox(width: 24),
+                        _svgControl(
+                          'assets/icons/player_repeat.svg',
+                          width: 22,
+                          height: 22,
+                          color: _repeat ? _playerAccentColor : _mutedIconColor,
+                          onTap: () async {
+                            final repeat = !_repeat;
+                            setState(() => _repeat = repeat);
+                            await _player.setLoopMode(
+                              repeat ? LoopMode.one : LoopMode.off,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 56),
+                    _actionMenu(),
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
             );
           },
@@ -407,8 +400,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _actionMenu(),
-          const SizedBox(height: 52),
           Container(
             color: const Color(0xFF07070A),
             child: SafeArea(top: false, child: _bottomNavigationBar(context)),
