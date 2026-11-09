@@ -8,8 +8,8 @@ import 'package:just_audio/just_audio.dart';
 import 'auth/auth_gate.dart';
 import 'firebase_options.dart';
 import 'theme/theme.dart';
-import 'views/lists.dart';
 import 'views/player_screen.dart';
+import 'views/playlists.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,6 +65,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  Song? _currentSong;
   final AudioPlayer _audioPlayer = AudioPlayer();
 
   @override
@@ -79,87 +80,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: colors.surface,
-      appBar: AppBar(
-        backgroundColor: colors.surface,
-        elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 16),
-          child: Image.asset('assets/images/logo.png', fit: BoxFit.contain),
-        ),
-        actions: [
-          _roundAction(Icons.notifications_none, colors),
-          const SizedBox(width: 8),
-          _roundAction(Icons.person_outline, colors),
-          const SizedBox(width: 16),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
-          child: SizedBox(
-            width: double.infinity,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Home',
-                style: AppTypography.headline1.copyWith(color: Colors.white),
-              ),
-            ),
+      body: IndexedStack(
+        index: _selectedIndex == 2 ? 1 : 0,
+        children: [
+          _homeContent(colors),
+          PlaylistsView(
+            audioPlayer: _audioPlayer,
+            embedded: true,
+            onPlaylistSaved: () => setState(() => _selectedIndex = 2),
+            onSongSelected: (title, artist, imageUrl, audioUrl) {
+              setState(() {
+                _currentSong = Song(
+                  title: title,
+                  artist: artist,
+                  imageUrl: imageUrl,
+                  audioUrl: audioUrl,
+                );
+              });
+            },
           ),
-        ),
-      ),
-      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: FirebaseFirestore.instance.collection('canciones').snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return const Center(child: Text('Error al cargar las canciones'));
-          }
-          if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.primary500),
-            );
-          }
-
-          final songs = snapshot.data!.docs;
-          final topPicks =
-              songs.where((doc) {
-                  return doc.data()['homeSection'] == 'topPicks';
-                }).toList()
-                ..sort((a, b) => _order(a.data()).compareTo(_order(b.data())));
-          final recent =
-              songs.where((doc) {
-                  return doc.data()['homeSection'] == 'recentlyPlayed';
-                }).toList()
-                ..sort((a, b) => _order(a.data()).compareTo(_order(b.data())));
-          final madeForYou = songs.where((doc) {
-            final song = Song.fromMap(doc.data());
-            return song.title == 'Baby' && song.artist == 'Justin Bieber';
-          }).toList();
-          final favoriteArtists = madeForYou
-              .map((doc) => Song.fromMap(doc.data()).artist)
-              .toSet()
-              .toList();
-
-          return ScrollConfiguration(
-            behavior: const MaterialScrollBehavior().copyWith(
-              overscroll: false,
-            ),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
-              children: [
-                _buildSongSection('Top picks for you', topPicks, wide: true),
-                const SizedBox(height: 18),
-                _buildSongSection(
-                  'Recently played',
-                  recent,
-                  subtitle: 'Based on what you hear',
-                ),
-                const SizedBox(height: 32),
-                _buildSongSection('Made for you', madeForYou),
-                const SizedBox(height: 32),
-                _buildArtistSection(favoriteArtists),
-              ],
-            ),
-          );
-        },
+        ],
       ),
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
@@ -167,6 +107,120 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  Widget _homeContent(ColorScheme colors) => SafeArea(
+    bottom: false,
+    child: Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+          child: SizedBox(
+            height: 48,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                const Spacer(),
+                _roundAction(Icons.notifications_none, colors),
+                const SizedBox(width: 8),
+                _roundAction(Icons.person_outline, colors),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 56,
+          width: double.infinity,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Home',
+                style: AppTypography.headline1.copyWith(color: Colors.white),
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream: FirebaseFirestore.instance
+                .collection('canciones')
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return const Center(
+                  child: Text('Error al cargar las canciones'),
+                );
+              }
+              if (!snapshot.hasData) {
+                return const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary500),
+                );
+              }
+
+              final songs = snapshot.data!.docs;
+              final topPicks =
+                  songs.where((doc) {
+                    return doc.data()['homeSection'] == 'topPicks';
+                  }).toList()..sort(
+                    (a, b) => _order(a.data()).compareTo(_order(b.data())),
+                  );
+              final recent =
+                  songs.where((doc) {
+                    final data = doc.data();
+                    final song = Song.fromMap(data);
+                    return data['homeSection'] == 'recentlyPlayed' ||
+                        (song.title == 'Hello' && song.artist == 'Adele');
+                  }).toList()..sort(
+                    (a, b) => _order(a.data()).compareTo(_order(b.data())),
+                  );
+              final madeForYou = songs.where((doc) {
+                final song = Song.fromMap(doc.data());
+                return song.title == 'Baby' && song.artist == 'Justin Bieber';
+              }).toList();
+              final favoriteArtists = madeForYou
+                  .map((doc) => Song.fromMap(doc.data()).artist)
+                  .toSet()
+                  .toList();
+
+              return ScrollConfiguration(
+                behavior: const MaterialScrollBehavior().copyWith(
+                  overscroll: false,
+                ),
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
+                  children: [
+                    _buildSongSection(
+                      'Top picks for you',
+                      topPicks,
+                      wide: true,
+                    ),
+                    const SizedBox(height: 18),
+                    _buildSongSection(
+                      'Recently played',
+                      recent,
+                      subtitle: 'Based on what you hear',
+                    ),
+                    const SizedBox(height: 32),
+                    _buildSongSection('Made for you', madeForYou),
+                    const SizedBox(height: 32),
+                    _buildArtistSection(favoriteArtists),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    ),
+  );
 
   int _order(Map<String, dynamic> data) =>
       data['homeOrder'] is int ? data['homeOrder'] as int : 0;
@@ -243,39 +297,42 @@ class _HomeScreenState extends State<HomeScreen> {
               final song = Song.fromMap(songs[index].data());
               return SizedBox(
                 width: cardWidth,
-                child: Padding(
-                  padding: EdgeInsets.only(right: albumSpacing),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(
-                          AppRadius.radius200,
+                child: InkWell(
+                  onTap: () => _openPlayer(context, song),
+                  child: Padding(
+                    padding: EdgeInsets.only(right: albumSpacing),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(
+                            AppRadius.radius200,
+                          ),
+                          child: SizedBox(
+                            width: imageWidth,
+                            height: imageHeight,
+                            child: _cover(song.imageUrl),
+                          ),
                         ),
-                        child: SizedBox(
-                          width: imageWidth,
-                          height: imageHeight,
-                          child: _cover(song.imageUrl),
+                        const SizedBox(height: 6),
+                        Text(
+                          song.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.label2.copyWith(
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        song.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.label2.copyWith(
-                          color: Colors.white,
+                        Text(
+                          song.artist,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.neutral300,
+                          ),
                         ),
-                      ),
-                      Text(
-                        song.artist,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.caption.copyWith(
-                          color: AppColors.neutral300,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -352,146 +409,184 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _miniPlayerInBar(BuildContext context) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('canciones')
-          .where('isMiniPlayerCurrent', isEqualTo: true)
-          .limit(1)
-          .snapshots(),
+      stream: FirebaseFirestore.instance.collection('canciones').snapshots(),
       builder: (context, snapshot) {
         Song song = const Song(
           title: 'Baby',
           artist: 'Justin Bieber',
           imageUrl: '',
         );
-        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-          song = Song.fromMap(snapshot.data!.docs.first.data());
+        if (snapshot.hasData) {
+          final current = snapshot.data!.docs.where(
+            (doc) => doc.data()['isMiniPlayerCurrent'] == true,
+          );
+          if (current.isNotEmpty) song = Song.fromMap(current.first.data());
         }
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
-          child: GestureDetector(
-            onTap: () => _openPlayer(context, song),
-            child: Container(
-              height: 54,
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainer,
-                borderRadius: BorderRadius.circular(AppRadius.radius300),
-              ),
-              child: Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: _cover(song.imageUrl),
+        song = _currentSong ?? song;
+        final source = _audioPlayer.audioSource;
+        if (source is UriAudioSource && snapshot.hasData) {
+          final playingSong = snapshot.data!.docs.where(
+            (doc) => doc.data()['audioUrl'] == source.uri.toString(),
+          );
+          if (playingSong.isNotEmpty) {
+            song = Song.fromMap(playingSong.first.data());
+          }
+        }
+        return StreamBuilder<PlayerState>(
+          stream: _audioPlayer.playerStateStream,
+          builder: (context, playerSnapshot) {
+            final isPlaying = playerSnapshot.data?.playing ?? false;
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
+              child: Container(
+                height: 54,
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainer,
+                  borderRadius: BorderRadius.circular(AppRadius.radius300),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => _openPlayer(context, song),
+                        child: Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: SizedBox(
+                                width: 40,
+                                height: 40,
+                                child: _cover(song.imageUrl),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    song.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTypography.label2.copyWith(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  Text(
+                                    song.artist,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTypography.caption.copyWith(
+                                      color: AppColors.neutral300,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          song.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.label2.copyWith(
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          song.artist,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.neutral300,
-                          ),
-                        ),
-                      ],
+                    IconButton(
+                      onPressed: () => _toggleMiniPlayer(context, song),
+                      icon: Icon(
+                        isPlaying
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
+                        color: AppColors.primary500,
+                        size: 28,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints.tightFor(
+                        width: 36,
+                        height: 40,
+                      ),
                     ),
-                  ),
-                  StreamBuilder<PlayerState>(
-                    stream: _audioPlayer.playerStateStream,
-                    builder: (context, playerSnapshot) {
-                      final isPlaying = playerSnapshot.data?.playing ?? false;
-                      return IconButton(
-                        onPressed: () {
-                          if (isPlaying) {
-                            _audioPlayer.pause();
-                          } else if (_audioPlayer.audioSource != null) {
-                            _audioPlayer.play();
-                          } else {
-                            _openPlayer(context, song);
-                          }
-                        },
-                        icon: Icon(
-                          isPlaying
-                              ? Icons.pause_rounded
-                              : Icons.play_arrow_rounded,
-                          color: AppColors.primary500,
-                          size: 28,
-                        ),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints.tightFor(
-                          width: 36,
-                          height: 40,
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
   }
 
   Widget _navigationBar(ColorScheme colors) {
-    return NavigationBar(
-      height: 60,
-      backgroundColor: colors.surfaceDim,
-      indicatorColor: Colors.transparent,
-      selectedIndex: _selectedIndex,
-      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-      onDestinationSelected: (index) {
-        setState(() => _selectedIndex = index);
-        if (index == 2) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ListsView()),
-          );
-        }
-      },
-      destinations: [
-        _destination('assets/icons/home.svg', 'Home'),
-        _destination('assets/icons/discover.svg', 'Discover'),
-        _destination('assets/icons/library.svg', 'Library'),
-        _destination('assets/icons/search.svg', 'Search'),
-      ],
+    return Container(
+      color: colors.surfaceDim,
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 60,
+          child: Row(
+            children: [
+              _navItem('assets/icons/home.svg', 'Home', 0),
+              _navItem('assets/icons/discover.svg', 'Discover', 1),
+              _navItem('assets/icons/library.svg', 'Library', 2),
+              _navItem('assets/icons/search.svg', 'Search', 3),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  NavigationDestination _destination(String asset, String label) {
-    Widget icon(Color color) => SvgPicture.asset(
-      asset,
-      width: 21,
-      height: 21,
-      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-    );
-    return NavigationDestination(
-      icon: icon(AppColors.neutral300),
-      selectedIcon: icon(AppColors.primary500),
-      label: label,
+  Widget _navItem(String asset, String label, int index) {
+    final selected = _selectedIndex == index;
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          if (index == 0 || index == 2) {
+            setState(() => _selectedIndex = index);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  index == 1
+                      ? 'Discover todavía no está disponible.'
+                      : 'Search todavía no está disponible.',
+                ),
+              ),
+            );
+          }
+        },
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SvgPicture.asset(
+              asset,
+              width: 22,
+              height: 22,
+              colorFilter: ColorFilter.mode(
+                selected ? AppColors.primary500 : AppColors.neutral300,
+                BlendMode.srcIn,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: AppTypography.caption.copyWith(
+                color: selected ? Colors.white : AppColors.neutral300,
+                letterSpacing: 1.1,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   void _openPlayer(BuildContext context, Song song) {
+    setState(() => _currentSong = song);
     Navigator.of(context).push(
       PageRouteBuilder<void>(
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
         pageBuilder: (context, animation, secondaryAnimation) => PlayerScreen(
           audioPlayer: _audioPlayer,
           title: song.title,
@@ -499,17 +594,39 @@ class _HomeScreenState extends State<HomeScreen> {
           imageUrl: song.imageUrl,
           audioUrl: song.audioUrl,
         ),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          final slide = Tween<Offset>(
-            begin: const Offset(0, 1),
-            end: Offset.zero,
-          ).chain(CurveTween(curve: Curves.easeOutCubic));
-          return SlideTransition(
-            position: animation.drive(slide),
-            child: child,
-          );
-        },
+        transitionsBuilder: (_, _, _, child) => child,
       ),
     );
+  }
+
+  Future<void> _toggleMiniPlayer(BuildContext context, Song song) async {
+    if (_audioPlayer.playing) {
+      await _audioPlayer.pause();
+      return;
+    }
+
+    try {
+      setState(() => _currentSong = song);
+      final started = await playAudioTrack(
+        _audioPlayer,
+        title: song.title,
+        audioUrl: song.audioUrl,
+      );
+      if (!started && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Todavía no hay un archivo de audio para esta canción.',
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo reproducir la canción: $error')),
+        );
+      }
+    }
   }
 }

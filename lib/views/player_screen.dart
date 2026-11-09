@@ -8,6 +8,32 @@ import 'package:just_audio/just_audio.dart';
 
 import '../theme/theme.dart';
 
+Future<bool> playAudioTrack(
+  AudioPlayer player, {
+  required String title,
+  required String audioUrl,
+}) async {
+  var url = audioUrl;
+  if (url.isEmpty) {
+    final audios = await FirebaseFirestore.instance
+        .collection('audios')
+        .where('titulo', isEqualTo: title)
+        .limit(1)
+        .get();
+    if (audios.docs.isNotEmpty) {
+      url = (audios.docs.first.data()['url'] ?? '').toString();
+    }
+  }
+  if (url.isEmpty) return false;
+
+  final currentSource = player.audioSource;
+  if (currentSource is! UriAudioSource || currentSource.uri.toString() != url) {
+    await player.setUrl(url);
+  }
+  await player.play();
+  return true;
+}
+
 class PlayerScreen extends StatefulWidget {
   const PlayerScreen({
     super.key,
@@ -31,7 +57,7 @@ class PlayerScreen extends StatefulWidget {
 class _PlayerScreenState extends State<PlayerScreen> {
   AudioPlayer get _player => widget.audioPlayer;
 
-  bool _liked = true;
+  bool _liked = false;
   bool _loading = false;
   bool _audioLoaded = false;
   bool _playing = false;
