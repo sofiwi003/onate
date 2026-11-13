@@ -156,9 +156,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const Spacer(),
-                _roundAction(Icons.notifications_none, colors),
+                _roundAction(
+                  Icons.notifications_none,
+                  colors,
+                  backgroundColor: AppColors.neutral700,
+                ),
                 const SizedBox(width: 8),
-                _roundAction(Icons.person_outline, colors),
+                _roundAction(
+                  Icons.person_outline,
+                  colors,
+                  backgroundColor: AppColors.neutral700,
+                ),
               ],
             ),
           ),
@@ -264,16 +272,30 @@ class _HomeScreenState extends State<HomeScreen> {
   int _order(Map<String, dynamic> data) =>
       data['homeOrder'] is int ? data['homeOrder'] as int : 0;
 
-  Widget _roundAction(IconData icon, ColorScheme colors) {
+  Widget _roundAction(
+    IconData icon,
+    ColorScheme colors, {
+    Color? backgroundColor,
+  }) {
     return Container(
       width: 38,
       height: 38,
       decoration: BoxDecoration(
-        color: colors.surfaceContainer,
+        color: backgroundColor ?? colors.surfaceContainer,
         shape: BoxShape.circle,
       ),
       child: Icon(icon, color: colors.onSurface, size: 20),
     );
+  }
+
+  Color _moodIconBackground() {
+    if (_selectedMood == 'Pulse') {
+      return AppColors.pulse800;
+    }
+    if (_selectedMood == 'Bloom') {
+      return AppColors.bloom800;
+    }
+    return AppColors.echo800;
   }
 
   Widget _buildSongSection(
@@ -486,6 +508,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (artist.contains('aretha franklin')) {
       return 'Soul';
     }
+    if (artist.contains('31 minutos')) {
+      return 'Pop';
+    }
     if (artist.contains('michael jackson')) {
       return 'Pop';
     }
@@ -530,9 +555,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Image.asset('assets/images/logo.png'),
                   ),
                   const Spacer(),
-                  _roundAction(Icons.notifications_none, colors),
+                  _roundAction(
+                    Icons.notifications_none,
+                    colors,
+                    backgroundColor: _moodIconBackground(),
+                  ),
                   const SizedBox(width: 8),
-                  _roundAction(Icons.person_outline, colors),
+                  _roundAction(
+                    Icons.person_outline,
+                    colors,
+                    backgroundColor: _moodIconBackground(),
+                  ),
                 ],
               ),
             ),
@@ -592,163 +625,118 @@ class _HomeScreenState extends State<HomeScreen> {
                   }
                   return a.compareTo(b);
                 });
-                final filtered = _selectedGenre == null
-                    ? songs
-                    : songs
-                          .where((s) => _genreForSong(s) == _selectedGenre)
-                          .toList();
-                final rock = songs
-                    .where(
-                      (s) => [
-                        'Rock',
-                        'Rock & roll',
-                        'Metal',
-                      ].contains(_genreForSong(s)),
-                    )
-                    .toList();
-                final pop = songs
-                    .where(
-                      (s) => [
-                        'Pop',
-                        'Pop latino',
-                        'K-pop',
-                        'J-pop',
-                      ].contains(_genreForSong(s)),
-                    )
-                    .toList();
-                final extraGenres = genres
-                    .where(
-                      (g) => ![
-                        'Rock',
-                        'Rock & roll',
-                        'Metal',
-                        'Pop',
-                        'Pop latino',
-                        'K-pop',
-                        'J-pop',
-                      ].contains(g),
-                    )
-                    .toList();
-                final sections = _selectedGenre != null
-                    ? [
-                        (
-                          _selectedGenre!,
-                          'Explore ${_selectedGenre!} music',
-                          filtered,
+                final shelves = _discoverShelves(_selectedMood);
+                final sections = shelves.map((shelf) {
+                  final shelfSongs = _songsForShelf(songs, shelf.$3);
+                  final visibleSongs = _selectedGenre == null
+                      ? shelfSongs
+                      : shelfSongs
+                            .where(
+                              (song) => _genreForSong(song) == _selectedGenre,
+                            )
+                            .toList();
+                  return (shelf.$1, shelf.$2, visibleSongs);
+                }).toList();
+                return Column(
+                  children: [
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      height: 54,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        children: [...genres.map(_genreChip)],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Center(
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 40),
+                        decoration: BoxDecoration(
+                          color: _selectedMood == 'Echo'
+                              ? AppColors.echo700
+                              : _selectedMood == 'Pulse'
+                              ? AppColors.pulse700
+                              : AppColors.bloom700,
+                          borderRadius: BorderRadius.circular(32),
                         ),
-                      ]
-                    : [
-                        ('Rock', 'Turn it up and feel the power', rock),
-                        ('Pop', 'The new of the moment', pop),
-                        ...extraGenres.map(
-                          (genre) => (
-                            genre,
-                            'Explore more ${genre.toLowerCase()} music',
-                            songs
-                                .where((s) => _genreForSong(s) == genre)
-                                .toList(),
-                          ),
-                        ),
-                      ];
-                return ScrollConfiguration(
-                  behavior: const MaterialScrollBehavior().copyWith(
-                    overscroll: false,
-                  ),
-                  child: ListView(
-                    primary: false,
-                    physics: const ClampingScrollPhysics(),
-                    clipBehavior: Clip.hardEdge,
-                    padding: const EdgeInsets.fromLTRB(0, 14, 0, 22),
-                    children: [
-                      SizedBox(
-                        height: 54,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          children: [
-                            const SizedBox(width: 28),
-                            _discoverFilter('Genre'),
-                            ...[
-                              ...(_selectedGenre == null
-                                  ? <String>[]
-                                  : <String>[_selectedGenre!]),
-                              ...genres.where((g) => g != _selectedGenre),
-                            ].map(
-                              (genre) => GestureDetector(
-                                onTap: () => setState(
-                                  () => _selectedGenre = _selectedGenre == genre
-                                      ? null
-                                      : genre,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: ['Echo', 'Pulse', 'Bloom'].map((m) {
+                            final selected = _selectedMood == m;
+                            return GestureDetector(
+                              onTap: () => setState(() => _selectedMood = m),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 13,
                                 ),
-                                child: _discoverFilter(
-                                  genre,
-                                  selected: _selectedGenre == genre,
+                                decoration: BoxDecoration(
+                                  color: selected
+                                      ? AppColors.actionPrimaryDefault
+                                      : AppColors.transparent,
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (selected) ...[
+                                      Container(
+                                        width: 10,
+                                        height: 10,
+                                        decoration: const BoxDecoration(
+                                          color: AppColors.neutral0,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                    ],
+                                    Text(
+                                      m,
+                                      style: TextStyle(
+                                        color: selected
+                                            ? AppColors.neutral0
+                                            : AppColors.neutral200,
+                                        fontSize: 16,
+                                        fontWeight: selected
+                                            ? FontWeight.w700
+                                            : FontWeight.w400,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ),
-                            _discoverFilter('Mood'),
-                            _discoverFilter('BPM'),
-                            const SizedBox(width: 16),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    Expanded(
+                      child: ScrollConfiguration(
+                        behavior: const MaterialScrollBehavior().copyWith(
+                          overscroll: false,
+                        ),
+                        child: ListView(
+                          primary: false,
+                          physics: const ClampingScrollPhysics(),
+                          clipBehavior: Clip.hardEdge,
+                          padding: const EdgeInsets.fromLTRB(0, 0, 0, 22),
+                          children: [
+                            for (var i = 0; i < sections.length; i++) ...[
+                              _discoverSection(
+                                sections[i].$1,
+                                sections[i].$2,
+                                sections[i].$3,
+                              ),
+                              if (i != sections.length - 1)
+                                const SizedBox(height: 32),
+                            ],
                           ],
                         ),
                       ),
-                      const SizedBox(height: 14),
-                      Center(
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 40),
-                          decoration: BoxDecoration(
-                            color: _selectedMood == 'Echo'
-                                ? AppColors.echo700
-                                : _selectedMood == 'Pulse'
-                                ? AppColors.pulse700
-                                : AppColors.bloom700,
-                            borderRadius: BorderRadius.circular(32),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: ['Echo', 'Pulse', 'Bloom']
-                                .map(
-                                  (m) => GestureDetector(
-                                    onTap: () =>
-                                        setState(() => _selectedMood = m),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 20,
-                                        vertical: 13,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: _selectedMood == m
-                                            ? AppColors.primary500
-                                            : AppColors.transparent,
-                                        borderRadius: BorderRadius.circular(30),
-                                      ),
-                                      child: Text(
-                                        m,
-                                        style: TextStyle(
-                                          color: _selectedMood == m
-                                              ? AppColors.neutral0
-                                              : AppColors.neutral200,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-                      for (var i = 0; i < sections.length; i++) ...[
-                        _discoverSection(
-                          sections[i].$1,
-                          sections[i].$2,
-                          sections[i].$3,
-                        ),
-                        if (i != sections.length - 1)
-                          const SizedBox(height: 32),
-                      ],
-                    ],
-                  ),
+                    ),
+                  ],
                 );
               },
             ),
@@ -758,6 +746,57 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
   );
 
+  List<(String, String, List<String>)> _discoverShelves(String mood) {
+    if (mood == 'Pulse') {
+      return [
+        (
+          "What's playing now",
+          'Feel the moment right now',
+          ['Resentía', 'WELTiTA', 'Gabriela'],
+        ),
+        ('Pop', 'The new of the moment', ['Bailando', 'Prófugos', 'Callaita']),
+      ];
+    }
+    if (mood == 'Bloom') {
+      return [
+        (
+          'The next boom',
+          'Turn it up and feel the power',
+          ['Amárrame', 'Rin Raja', 'Billie Jean'],
+        ),
+        (
+          'Beyond the day',
+          'Rhythms of the world',
+          ['Hello', 'Starboy', 'Callaita'],
+        ),
+      ];
+    }
+    return [
+      (
+        'Top: USA',
+        'Chart of trending songs this month',
+        ['Baby', 'Roar', 'Hello'],
+      ),
+      (
+        'Favorites of all times',
+        'Best Pop songs',
+        ['Bailando Solo', 'WELTiTA', 'Callaita'],
+      ),
+    ];
+  }
+
+  List<Song> _songsForShelf(List<Song> songs, List<String> titles) {
+    return titles
+        .map((title) {
+          for (final song in songs) {
+            if (song.title.toLowerCase() == title.toLowerCase()) return song;
+          }
+          return null;
+        })
+        .whereType<Song>()
+        .toList();
+  }
+
   Widget _discoverFilter(String label, {bool selected = false}) {
     final outlineColor = _selectedMood == 'Pulse'
         ? AppColors.pulse700
@@ -766,31 +805,43 @@ class _HomeScreenState extends State<HomeScreen> {
         : AppColors.echo700;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary500 : AppColors.transparent,
-          border: selected ? null : Border.all(color: outlineColor, width: 1.4),
-          borderRadius: BorderRadius.circular(30),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.neutral0,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+      child: Align(
+        alignment: Alignment.center,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.actionPrimaryDefault
+                : AppColors.transparent,
+            border: selected ? null : Border.all(color: outlineColor, width: 1),
+            borderRadius: BorderRadius.circular(100),
+          ),
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.neutral0,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.25,
+            ),
           ),
         ),
       ),
     );
   }
 
+  Widget _genreChip(String genre) => GestureDetector(
+    onTap: () =>
+        setState(() => _selectedGenre = _selectedGenre == genre ? null : genre),
+    child: _discoverFilter(genre, selected: _selectedGenre == genre),
+  );
+
   Widget _discoverSection(String title, String subtitle, List<Song> songs) =>
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 28, right: 24),
+            padding: const EdgeInsets.only(left: 16, right: 16),
             child: Row(
               children: [
                 Expanded(
@@ -841,7 +892,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: GestureDetector(
                     onTap: () => _openPlayer(context, song),
                     child: Padding(
-                      padding: const EdgeInsets.only(left: 28),
+                      padding: const EdgeInsets.only(left: 16),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1051,6 +1102,7 @@ class _HomeScreenState extends State<HomeScreen> {
           artist: song.artist,
           imageUrl: song.imageUrl,
           audioUrl: song.audioUrl,
+          selectedNavigationIndex: _selectedIndex,
         ),
         transitionsBuilder: (_, _, _, child) => child,
       ),

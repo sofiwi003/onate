@@ -44,6 +44,7 @@ class PlayerScreen extends StatefulWidget {
     required this.artist,
     required this.imageUrl,
     required this.audioUrl,
+    this.selectedNavigationIndex = 0,
   });
 
   final AudioPlayer audioPlayer;
@@ -52,6 +53,7 @@ class PlayerScreen extends StatefulWidget {
   final String artist;
   final String imageUrl;
   final String audioUrl;
+  final int selectedNavigationIndex;
 
   @override
   State<PlayerScreen> createState() => _PlayerScreenState();
@@ -542,15 +544,30 @@ class _PlayerScreenState extends State<PlayerScreen> {
       color: AppColors.neutral900,
       child: Row(
         children: [
-          _navigationItem(context, 'assets/icons/home.svg', 'Home', false),
+          _navigationItem(
+            context,
+            'assets/icons/home.svg',
+            'Home',
+            widget.selectedNavigationIndex == 0,
+          ),
           _navigationItem(
             context,
             'assets/icons/discover.svg',
             'Discover',
-            false,
+            widget.selectedNavigationIndex == 1,
           ),
-          _navigationItem(context, 'assets/icons/library.svg', 'Library', true),
-          _navigationItem(context, 'assets/icons/search.svg', 'Search', false),
+          _navigationItem(
+            context,
+            'assets/icons/library.svg',
+            'Library',
+            widget.selectedNavigationIndex == 2,
+          ),
+          _navigationItem(
+            context,
+            'assets/icons/search.svg',
+            'Search',
+            widget.selectedNavigationIndex == 3,
+          ),
         ],
       ),
     );

@@ -1055,6 +1055,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
           artist: artist,
           imageUrl: imageUrl,
           audioUrl: audioUrl,
+          selectedNavigationIndex: 2,
         ),
         transitionsBuilder: (_, _, _, child) => child,
       ),
