@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:just_audio/just_audio.dart';
@@ -38,6 +39,7 @@ class PlayerScreen extends StatefulWidget {
   const PlayerScreen({
     super.key,
     required this.audioPlayer,
+    this.songId = '',
     required this.title,
     required this.artist,
     required this.imageUrl,
@@ -45,6 +47,7 @@ class PlayerScreen extends StatefulWidget {
   });
 
   final AudioPlayer audioPlayer;
+  final String songId;
   final String title;
   final String artist;
   final String imageUrl;
@@ -66,12 +69,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
 
-  static const _playerAccentColor = Color(0xFF765FFF);
-  static const _mutedIconColor = Color(0xFFC9C9CE);
+  static const _playerAccentColor = AppColors.primary500;
+  static const _mutedIconColor = AppColors.neutral200;
 
   late final StreamSubscription<PlayerState> _playerStateSubscription;
   late final StreamSubscription<Duration?> _durationSubscription;
   late final StreamSubscription<Duration> _positionSubscription;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
+  _favoriteSubscription;
 
   @override
   void initState() {
@@ -94,6 +99,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
       if (mounted) setState(() => _position = position);
     });
 
+    _listenForFavorite();
+
     _loadAudio(autoplay: true);
   }
 
@@ -102,7 +109,56 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _playerStateSubscription.cancel();
     _durationSubscription.cancel();
     _positionSubscription.cancel();
+    _favoriteSubscription?.cancel();
     super.dispose();
+  }
+
+  DocumentReference<Map<String, dynamic>>? get _favoriteReference {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || widget.songId.isEmpty) return null;
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('favorites')
+        .doc(widget.songId);
+  }
+
+  void _listenForFavorite() {
+    final reference = _favoriteReference;
+    if (reference == null) return;
+    _favoriteSubscription = reference.snapshots().listen((snapshot) {
+      if (mounted) setState(() => _liked = snapshot.exists);
+    });
+  }
+
+  Future<void> _toggleFavorite() async {
+    final reference = _favoriteReference;
+    if (reference == null) {
+      _showMessage('Inicia sesión para guardar tus favoritos.');
+      return;
+    }
+
+    final wasLiked = _liked;
+    setState(() => _liked = !wasLiked);
+    try {
+      if (wasLiked) {
+        await reference.delete();
+      } else {
+        await reference.set({
+          'songId': widget.songId,
+          'title': widget.title,
+          'artist': widget.artist,
+          'imageUrl': widget.imageUrl,
+          'audioUrl': widget.audioUrl,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() => _liked = wasLiked);
+        _showMessage('No se pudo guardar el favorito. Revisa tu conexión.');
+      }
+    }
   }
 
   Future<void> _loadAudio({
@@ -276,7 +332,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                             ),
                           ),
                           GestureDetector(
-                            onTap: () => setState(() => _liked = !_liked),
+                            onTap: _toggleFavorite,
                             child: _liked
                                 ? SvgPicture.asset(
                                     'assets/icons/player_like_circle.svg',
@@ -427,7 +483,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            color: const Color(0xFF07070A),
+            color: AppColors.neutral900,
             child: SafeArea(top: false, child: _bottomNavigationBar(context)),
           ),
         ],
@@ -483,7 +539,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Widget _bottomNavigationBar(BuildContext context) {
     return Container(
       height: 60,
-      color: const Color(0xFF07070A),
+      color: AppColors.neutral900,
       child: Row(
         children: [
           _navigationItem(context, 'assets/icons/home.svg', 'Home', false),

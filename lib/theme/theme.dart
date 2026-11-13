@@ -76,6 +76,7 @@ class AppTypography {
 }
 
 class AppColors {
+  static const transparent = Colors.transparent;
   //PRIMARY
   static const primary50 = Color(0xFFF2EFFF);
   static const primary100 = Color(0xFFE4DFFF);

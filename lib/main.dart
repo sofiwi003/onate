@@ -35,19 +35,22 @@ class MainApp extends StatelessWidget {
 // Datos sencillos para pasar una canción desde Home al reproductor.
 class Song {
   const Song({
+    this.id = '',
     required this.title,
     required this.artist,
     required this.imageUrl,
     this.audioUrl = '',
   });
 
+  final String id;
   final String title;
   final String artist;
   final String imageUrl;
   final String audioUrl;
 
-  factory Song.fromMap(Map<String, dynamic> data) {
+  factory Song.fromMap(Map<String, dynamic> data, {String id = ''}) {
     return Song(
+      id: id,
       title: (data['title'] ?? data['titulo'] ?? 'Sin título').toString(),
       artist: (data['artist'] ?? data['subtitulo'] ?? 'Desconocido').toString(),
       imageUrl: (data['imageUrl'] ?? '').toString(),
@@ -65,6 +68,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  String? _selectedGenre;
+  String _selectedMood = 'Echo';
   Song? _currentSong;
   final AudioPlayer _audioPlayer = AudioPlayer();
 
@@ -74,6 +79,25 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  Future<void> _markRecentlyPlayed(Song song) async {
+    try {
+      final documents = await FirebaseFirestore.instance
+          .collection('canciones')
+          .get();
+      for (final document in documents.docs) {
+        final savedSong = Song.fromMap(document.data());
+        if (savedSong.title == song.title && savedSong.artist == song.artist) {
+          await document.reference.update({
+            'lastPlayedAt': FieldValue.serverTimestamp(),
+          });
+          return;
+        }
+      }
+    } catch (_) {
+      // No impide reproducir si falla guardar el historial.
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -81,29 +105,34 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: colors.surface,
       body: IndexedStack(
-        index: _selectedIndex == 2 ? 1 : 0,
+        index: _selectedIndex,
         children: [
           _homeContent(colors),
+          _discoverContent(colors),
           PlaylistsView(
             audioPlayer: _audioPlayer,
             embedded: true,
             onPlaylistSaved: () => setState(() => _selectedIndex = 2),
-            onSongSelected: (title, artist, imageUrl, audioUrl) {
-              setState(() {
-                _currentSong = Song(
-                  title: title,
-                  artist: artist,
-                  imageUrl: imageUrl,
-                  audioUrl: audioUrl,
-                );
-              });
+            onSongSelected: (title, artist, imageUrl, audioUrl, songId) {
+              final song = Song(
+                id: songId,
+                title: title,
+                artist: artist,
+                imageUrl: imageUrl,
+                audioUrl: audioUrl,
+              );
+              setState(() => _currentSong = song);
+              _markRecentlyPlayed(song);
             },
           ),
         ],
       ),
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
-        children: [_miniPlayerInBar(context), _navigationBar(colors)],
+        children: [
+          if (_currentSong != null) _miniPlayerInBar(context),
+          _navigationBar(colors),
+        ],
       ),
     );
   }
@@ -143,7 +172,9 @@ class _HomeScreenState extends State<HomeScreen> {
               alignment: Alignment.centerLeft,
               child: Text(
                 'Home',
-                style: AppTypography.headline1.copyWith(color: Colors.white),
+                style: AppTypography.headline1.copyWith(
+                  color: AppColors.neutral0,
+                ),
               ),
             ),
           ),
@@ -175,18 +206,26 @@ class _HomeScreenState extends State<HomeScreen> {
               final recent =
                   songs.where((doc) {
                     final data = doc.data();
-                    final song = Song.fromMap(data);
-                    return data['homeSection'] == 'recentlyPlayed' ||
+                    final song = Song.fromMap(data, id: doc.id);
+                    return data['lastPlayedAt'] != null ||
+                        data['homeSection'] == 'recentlyPlayed' ||
                         (song.title == 'Hello' && song.artist == 'Adele');
-                  }).toList()..sort(
-                    (a, b) => _order(a.data()).compareTo(_order(b.data())),
-                  );
+                  }).toList()..sort((a, b) {
+                    final aPlayed = a.data()['lastPlayedAt'];
+                    final bPlayed = b.data()['lastPlayedAt'];
+                    if (aPlayed is Timestamp && bPlayed is Timestamp) {
+                      return bPlayed.compareTo(aPlayed);
+                    }
+                    if (aPlayed is Timestamp) return -1;
+                    if (bPlayed is Timestamp) return 1;
+                    return _order(a.data()).compareTo(_order(b.data()));
+                  });
               final madeForYou = songs.where((doc) {
-                final song = Song.fromMap(doc.data());
+                final song = Song.fromMap(doc.data(), id: doc.id);
                 return song.title == 'Baby' && song.artist == 'Justin Bieber';
               }).toList();
               final favoriteArtists = madeForYou
-                  .map((doc) => Song.fromMap(doc.data()).artist)
+                  .map((doc) => Song.fromMap(doc.data(), id: doc.id).artist)
                   .toSet()
                   .toList();
 
@@ -264,7 +303,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       title,
                       style: AppTypography.subtitle2.copyWith(
-                        color: Colors.white,
+                        color: AppColors.neutral0,
                       ),
                     ),
                     if (subtitle != null) ...[
@@ -272,7 +311,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(
                         subtitle,
                         style: AppTypography.caption.copyWith(
-                          color: AppColors.neutral300,
+                          color: AppColors.neutral0,
                         ),
                       ),
                     ],
@@ -294,7 +333,10 @@ class _HomeScreenState extends State<HomeScreen> {
             scrollDirection: Axis.horizontal,
             itemCount: songs.length,
             itemBuilder: (context, index) {
-              final song = Song.fromMap(songs[index].data());
+              final song = Song.fromMap(
+                songs[index].data(),
+                id: songs[index].id,
+              );
               return SizedBox(
                 width: cardWidth,
                 child: InkWell(
@@ -320,7 +362,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppTypography.label2.copyWith(
-                            color: Colors.white,
+                            color: AppColors.neutral0,
                           ),
                         ),
                         Text(
@@ -366,7 +408,7 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Text(
           'Your favorite artist',
-          style: AppTypography.subtitle2.copyWith(color: Colors.white),
+          style: AppTypography.subtitle2.copyWith(color: AppColors.neutral0),
         ),
         const SizedBox(height: 16),
         SizedBox(
@@ -407,31 +449,457 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  String _genreForSong(Song song) {
+    final title = song.title.toLowerCase();
+    final artist = song.artist.toLowerCase();
+    if (artist.contains('katseye') || artist == 'bts') return 'K-pop';
+    if (artist.contains('miki matsubara')) return 'J-pop';
+    if (artist.contains('bad bunny') ||
+        artist.contains('karol g') ||
+        artist.contains('pablo chill-e')) {
+      return 'Reggaeton';
+    }
+    if (artist.contains('chico trujillo')) return 'Cumbia';
+    if (artist.contains('soda stereo') ||
+        artist.contains('los bunkers') ||
+        artist.contains('angine de poitrine')) {
+      return 'Rock';
+    }
+    if (artist.contains('black sabbath')) {
+      return 'Metal';
+    }
+    if (artist.contains('chic')) {
+      return 'Disco / Funk';
+    }
+    if (artist.contains('bob marley')) {
+      return 'Reggae';
+    }
+    if (artist.contains('chuck berry')) {
+      return 'Rock & roll';
+    }
+    if (artist.contains('adele') ||
+        artist.contains('katy perry') ||
+        artist.contains('justin bieber') ||
+        artist.contains('nsync')) {
+      return 'Pop';
+    }
+    if (artist.contains('aretha franklin')) {
+      return 'Soul';
+    }
+    if (artist.contains('michael jackson')) {
+      return 'Pop';
+    }
+    if (artist.contains('mon laferte')) {
+      return 'Pop latino';
+    }
+    if (artist.contains('the weeknd')) {
+      return 'R&B';
+    }
+    if (title.contains('bby wow')) {
+      return 'Reggaeton';
+    }
+    return 'Otros';
+  }
+
+  Widget _discoverContent(ColorScheme colors) => DecoratedBox(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: _selectedMood == 'Pulse'
+            ? [AppColors.pulse500, AppColors.pulse800]
+            : _selectedMood == 'Bloom'
+            ? [AppColors.bloom500, AppColors.bloom800]
+            : [AppColors.echo500, AppColors.echo800],
+        stops: const [0.2, 1],
+      ),
+    ),
+    child: SafeArea(
+      bottom: false,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+            child: SizedBox(
+              height: 48,
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: Image.asset('assets/images/logo.png'),
+                  ),
+                  const Spacer(),
+                  _roundAction(Icons.notifications_none, colors),
+                  const SizedBox(width: 8),
+                  _roundAction(Icons.person_outline, colors),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(
+            height: 56,
+            width: double.infinity,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Discover',
+                  style: AppTypography.headline1.copyWith(
+                    color: AppColors.neutral0,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: FirebaseFirestore.instance
+                  .collection('canciones')
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Text('No se pudieron cargar las canciones'),
+                  );
+                }
+                if (!snapshot.hasData) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.primary500,
+                    ),
+                  );
+                }
+                final songs = snapshot.data!.docs
+                    .map((doc) => Song.fromMap(doc.data(), id: doc.id))
+                    .toList();
+                final genres =
+                    songs
+                        .map(_genreForSong)
+                        .toSet()
+                        .where((g) => g != 'Otros')
+                        .toList()
+                      ..sort();
+                const genreOrder = ['Pop', 'Reggaeton'];
+                genres.sort((a, b) {
+                  final aRank = genreOrder.indexOf(a);
+                  final bRank = genreOrder.indexOf(b);
+                  if (aRank >= 0 || bRank >= 0) {
+                    if (aRank < 0) return 1;
+                    if (bRank < 0) return -1;
+                    return aRank.compareTo(bRank);
+                  }
+                  return a.compareTo(b);
+                });
+                final filtered = _selectedGenre == null
+                    ? songs
+                    : songs
+                          .where((s) => _genreForSong(s) == _selectedGenre)
+                          .toList();
+                final rock = songs
+                    .where(
+                      (s) => [
+                        'Rock',
+                        'Rock & roll',
+                        'Metal',
+                      ].contains(_genreForSong(s)),
+                    )
+                    .toList();
+                final pop = songs
+                    .where(
+                      (s) => [
+                        'Pop',
+                        'Pop latino',
+                        'K-pop',
+                        'J-pop',
+                      ].contains(_genreForSong(s)),
+                    )
+                    .toList();
+                final extraGenres = genres
+                    .where(
+                      (g) => ![
+                        'Rock',
+                        'Rock & roll',
+                        'Metal',
+                        'Pop',
+                        'Pop latino',
+                        'K-pop',
+                        'J-pop',
+                      ].contains(g),
+                    )
+                    .toList();
+                final sections = _selectedGenre != null
+                    ? [
+                        (
+                          _selectedGenre!,
+                          'Explore ${_selectedGenre!} music',
+                          filtered,
+                        ),
+                      ]
+                    : [
+                        ('Rock', 'Turn it up and feel the power', rock),
+                        ('Pop', 'The new of the moment', pop),
+                        ...extraGenres.map(
+                          (genre) => (
+                            genre,
+                            'Explore more ${genre.toLowerCase()} music',
+                            songs
+                                .where((s) => _genreForSong(s) == genre)
+                                .toList(),
+                          ),
+                        ),
+                      ];
+                return ScrollConfiguration(
+                  behavior: const MaterialScrollBehavior().copyWith(
+                    overscroll: false,
+                  ),
+                  child: ListView(
+                    primary: false,
+                    physics: const ClampingScrollPhysics(),
+                    clipBehavior: Clip.hardEdge,
+                    padding: const EdgeInsets.fromLTRB(0, 14, 0, 22),
+                    children: [
+                      SizedBox(
+                        height: 54,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: [
+                            const SizedBox(width: 28),
+                            _discoverFilter('Genre'),
+                            ...[
+                              ...(_selectedGenre == null
+                                  ? <String>[]
+                                  : <String>[_selectedGenre!]),
+                              ...genres.where((g) => g != _selectedGenre),
+                            ].map(
+                              (genre) => GestureDetector(
+                                onTap: () => setState(
+                                  () => _selectedGenre = _selectedGenre == genre
+                                      ? null
+                                      : genre,
+                                ),
+                                child: _discoverFilter(
+                                  genre,
+                                  selected: _selectedGenre == genre,
+                                ),
+                              ),
+                            ),
+                            _discoverFilter('Mood'),
+                            _discoverFilter('BPM'),
+                            const SizedBox(width: 16),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Center(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 40),
+                          decoration: BoxDecoration(
+                            color: _selectedMood == 'Echo'
+                                ? AppColors.echo700
+                                : _selectedMood == 'Pulse'
+                                ? AppColors.pulse700
+                                : AppColors.bloom700,
+                            borderRadius: BorderRadius.circular(32),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: ['Echo', 'Pulse', 'Bloom']
+                                .map(
+                                  (m) => GestureDetector(
+                                    onTap: () =>
+                                        setState(() => _selectedMood = m),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                        vertical: 13,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _selectedMood == m
+                                            ? AppColors.primary500
+                                            : AppColors.transparent,
+                                        borderRadius: BorderRadius.circular(30),
+                                      ),
+                                      child: Text(
+                                        m,
+                                        style: TextStyle(
+                                          color: _selectedMood == m
+                                              ? AppColors.neutral0
+                                              : AppColors.neutral200,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      for (var i = 0; i < sections.length; i++) ...[
+                        _discoverSection(
+                          sections[i].$1,
+                          sections[i].$2,
+                          sections[i].$3,
+                        ),
+                        if (i != sections.length - 1)
+                          const SizedBox(height: 32),
+                      ],
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  Widget _discoverFilter(String label, {bool selected = false}) {
+    final outlineColor = _selectedMood == 'Pulse'
+        ? AppColors.pulse700
+        : _selectedMood == 'Bloom'
+        ? AppColors.bloom700
+        : AppColors.echo700;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary500 : AppColors.transparent,
+          border: selected ? null : Border.all(color: outlineColor, width: 1.4),
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.neutral0,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _discoverSection(String title, String subtitle, List<Song> songs) =>
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 28, right: 24),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: AppTypography.subtitle2.copyWith(
+                          color: AppColors.neutral0,
+                          fontSize: 22,
+                        ),
+                      ),
+                      Text(
+                        subtitle,
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.neutral100,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  'See all',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.neutral0,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            height: 148,
+            child: ListView.builder(
+              primary: false,
+              scrollDirection: Axis.horizontal,
+              physics: const ClampingScrollPhysics(),
+              clipBehavior: Clip.hardEdge,
+              itemCount: songs.length,
+              itemBuilder: (context, index) {
+                final song = songs[index];
+                return SizedBox(
+                  width: 132,
+                  height: 148,
+                  child: GestureDetector(
+                    onTap: () => _openPlayer(context, song),
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 28),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: SizedBox.square(
+                              dimension: 104,
+                              child: _cover(song.imageUrl),
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            song.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.label2.copyWith(
+                              color: AppColors.neutral0,
+                            ),
+                          ),
+                          Text(
+                            song.artist,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.neutral0,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      );
+
   Widget _miniPlayerInBar(BuildContext context) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance.collection('canciones').snapshots(),
       builder: (context, snapshot) {
-        Song song = const Song(
-          title: 'Baby',
-          artist: 'Justin Bieber',
-          imageUrl: '',
-        );
-        if (snapshot.hasData) {
-          final current = snapshot.data!.docs.where(
-            (doc) => doc.data()['isMiniPlayerCurrent'] == true,
-          );
-          if (current.isNotEmpty) song = Song.fromMap(current.first.data());
-        }
-        song = _currentSong ?? song;
+        Song? song = _currentSong;
         final source = _audioPlayer.audioSource;
         if (source is UriAudioSource && snapshot.hasData) {
           final playingSong = snapshot.data!.docs.where(
             (doc) => doc.data()['audioUrl'] == source.uri.toString(),
           );
           if (playingSong.isNotEmpty) {
-            song = Song.fromMap(playingSong.first.data());
+            song = Song.fromMap(
+              playingSong.first.data(),
+              id: playingSong.first.id,
+            );
           }
         }
+        if (song == null) return const SizedBox.shrink();
+        final selectedSong = song;
         return StreamBuilder<PlayerState>(
           stream: _audioPlayer.playerStateStream,
           builder: (context, playerSnapshot) {
@@ -450,7 +918,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Expanded(
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onTap: () => _openPlayer(context, song),
+                        onTap: () => _openPlayer(context, selectedSong),
                         child: Row(
                           children: [
                             ClipRRect(
@@ -458,7 +926,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: SizedBox(
                                 width: 40,
                                 height: 40,
-                                child: _cover(song.imageUrl),
+                                child: _cover(selectedSong.imageUrl),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -468,15 +936,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    song.title,
+                                    selectedSong.title,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: AppTypography.label2.copyWith(
-                                      color: Colors.white,
+                                      color: AppColors.neutral0,
                                     ),
                                   ),
                                   Text(
-                                    song.artist,
+                                    selectedSong.artist,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: AppTypography.caption.copyWith(
@@ -491,7 +959,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     IconButton(
-                      onPressed: () => _toggleMiniPlayer(context, song),
+                      onPressed: () => _toggleMiniPlayer(context, selectedSong),
                       icon: Icon(
                         isPlaying
                             ? Icons.pause_rounded
@@ -541,19 +1009,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
-          if (index == 0 || index == 2) {
-            setState(() => _selectedIndex = index);
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  index == 1
-                      ? 'Discover todavía no está disponible.'
-                      : 'Search todavía no está disponible.',
-                ),
-              ),
-            );
-          }
+          if (index < 3) setState(() => _selectedIndex = index);
         },
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -571,7 +1027,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               label,
               style: AppTypography.caption.copyWith(
-                color: selected ? Colors.white : AppColors.neutral300,
+                color: selected ? AppColors.neutral0 : AppColors.neutral300,
                 letterSpacing: 1.1,
               ),
             ),
@@ -583,12 +1039,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _openPlayer(BuildContext context, Song song) {
     setState(() => _currentSong = song);
+    _markRecentlyPlayed(song);
     Navigator.of(context).push(
       PageRouteBuilder<void>(
         transitionDuration: Duration.zero,
         reverseTransitionDuration: Duration.zero,
         pageBuilder: (context, animation, secondaryAnimation) => PlayerScreen(
           audioPlayer: _audioPlayer,
+          songId: song.id,
           title: song.title,
           artist: song.artist,
           imageUrl: song.imageUrl,
@@ -607,6 +1065,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       setState(() => _currentSong = song);
+      await _markRecentlyPlayed(song);
       final started = await playAudioTrack(
         _audioPlayer,
         title: song.title,

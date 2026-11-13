@@ -29,6 +29,7 @@ class PlaylistsView extends StatefulWidget {
     String artist,
     String imageUrl,
     String audioUrl,
+    String songId,
   )?
   onSongSelected;
 
@@ -136,7 +137,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.subtitle2.copyWith(
-                  color: Colors.white,
+                  color: AppColors.neutral0,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -184,7 +185,9 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                   Text(
                     labels[index],
                     style: AppTypography.subtitle2.copyWith(
-                      color: selected ? Colors.white : AppColors.neutral300,
+                      color: selected
+                          ? AppColors.neutral0
+                          : AppColors.neutral300,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                     ),
                   ),
@@ -195,7 +198,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                     decoration: BoxDecoration(
                       color: selected
                           ? AppColors.primary500
-                          : Colors.transparent,
+                          : AppColors.transparent,
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
@@ -212,117 +215,60 @@ class _PlaylistsViewState extends State<PlaylistsView> {
     if (uid == null) {
       return const Center(child: Text('Inicia sesión para ver tu biblioteca'));
     }
-    if (_selectedTab == 0) return _songsGrid();
+    if (_selectedTab == 0) return _songsGrid(uid);
     if (_selectedTab == 1) return _artistsGrid();
     return _playlistsGrid(uid);
   }
 
-  Widget _songsGrid() => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-    stream: FirebaseFirestore.instance.collection('canciones').snapshots(),
-    builder: (context, snapshot) {
-      if (snapshot.hasError) {
-        return _message('No se pudieron cargar las canciones');
-      }
-      if (!snapshot.hasData) return _loading();
-      final songs = snapshot.data!.docs;
-      if (songs.isEmpty) return _message('Todavía no hay canciones');
-      return GridView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        itemCount: songs.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 20,
-          childAspectRatio: 0.78,
-        ),
-        itemBuilder: (context, index) {
-          final data = songs[index].data();
-          return _LibraryCard(
-            title: (data['title'] ?? data['titulo'] ?? 'Sin título').toString(),
-            subtitle: (data['artist'] ?? data['subtitulo'] ?? 'Artista')
-                .toString(),
-            imageUrl: (data['imageUrl'] ?? '').toString(),
-          );
-        },
-      );
-    },
-  );
-
-  Widget _artistsGrid() => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-    stream: FirebaseFirestore.instance.collection('canciones').snapshots(),
-    builder: (context, snapshot) {
-      if (snapshot.hasError) {
-        return _message('No se pudieron cargar los artistas');
-      }
-      if (!snapshot.hasData) return _loading();
-      final artists = <String, String>{};
-      for (final doc in snapshot.data!.docs) {
-        final data = doc.data();
-        final name = (data['artist'] ?? data['subtitulo'] ?? '')
-            .toString()
-            .trim();
-        if (name.isNotEmpty) {
-          artists.putIfAbsent(
-            name,
-            () => (data['artistImageUrl'] ?? '').toString(),
-          );
-        }
-      }
-      if (artists.isEmpty) return _message('Todavía no hay artistas');
-      return GridView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        itemCount: artists.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 24,
-          childAspectRatio: 0.78,
-        ),
-        itemBuilder: (context, index) {
-          final entry = artists.entries.elementAt(index);
-          return Column(
-            children: [
-              Expanded(
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: ClipOval(
-                    child: entry.value.isEmpty
-                        ? Container(
-                            color: AppColors.neutral700,
-                            child: const Icon(
-                              Icons.person,
-                              color: AppColors.neutral400,
-                              size: 44,
-                            ),
-                          )
-                        : Image.network(
-                            entry.value,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => Container(
-                              color: AppColors.neutral700,
-                              child: const Icon(
-                                Icons.person,
-                                color: AppColors.neutral400,
-                                size: 44,
-                              ),
-                            ),
-                          ),
-                  ),
+  Widget _songsGrid(String uid) =>
+      StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .collection('favorites')
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return _message('No se pudieron cargar tus canciones');
+          }
+          if (!snapshot.hasData) return _loading();
+          final songs = snapshot.data!.docs;
+          if (songs.isEmpty) {
+            return _message('No liked songs yet');
+          }
+          return GridView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            itemCount: songs.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 20,
+              childAspectRatio: 0.78,
+            ),
+            itemBuilder: (context, index) {
+              final song = songs[index];
+              final data = song.data();
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _openPlayer(
+                  (data['title'] ?? 'Sin título').toString(),
+                  (data['artist'] ?? 'Artista').toString(),
+                  (data['imageUrl'] ?? '').toString(),
+                  (data['audioUrl'] ?? '').toString(),
+                  song.id,
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                entry.key,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.label1.copyWith(color: Colors.white),
-              ),
-            ],
+                child: _LibraryCard(
+                  title: (data['title'] ?? 'Sin título').toString(),
+                  subtitle: (data['artist'] ?? 'Artista').toString(),
+                  imageUrl: (data['imageUrl'] ?? '').toString(),
+                ),
+              );
+            },
           );
         },
       );
-    },
-  );
+
+  Widget _artistsGrid() => const SizedBox.shrink();
 
   Widget _playlistsGrid(
     String uid,
@@ -372,7 +318,9 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                   const SizedBox(height: 8),
                   Text(
                     'My playlist',
-                    style: AppTypography.label1.copyWith(color: Colors.white),
+                    style: AppTypography.label1.copyWith(
+                      color: AppColors.neutral0,
+                    ),
                   ),
                 ],
               ),
@@ -477,6 +425,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                     songArtist,
                     songImage,
                     songAudio,
+                    document.id,
                   );
                   final player = widget.audioPlayer;
                   if (player == null) return;
@@ -563,7 +512,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                               child: FilledButton.icon(
                                 style: FilledButton.styleFrom(
                                   backgroundColor: AppColors.primary500,
-                                  foregroundColor: Colors.white,
+                                  foregroundColor: AppColors.neutral0,
                                   shape: const StadiumBorder(),
                                 ),
                                 onPressed: songs.isEmpty
@@ -618,6 +567,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                             songArtist,
                             songImage,
                             songAudio,
+                            document.id,
                           ),
                           child: SizedBox(
                             height: 72,
@@ -750,7 +700,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
       FloatingActionButton(
         heroTag: 'library-create-fab',
         backgroundColor: AppColors.primary500,
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.neutral0,
         shape: const CircleBorder(),
         onPressed: () =>
             setState(() => _showCreateOptions = !_showCreateOptions),
@@ -779,10 +729,10 @@ class _PlaylistsViewState extends State<PlaylistsView> {
           children: [
             Text(
               label,
-              style: AppTypography.body1.copyWith(color: Colors.white),
+              style: AppTypography.body1.copyWith(color: AppColors.neutral0),
             ),
             const SizedBox(width: 16),
-            Icon(icon, color: Colors.white, size: 24),
+            Icon(icon, color: AppColors.neutral0, size: 24),
           ],
         ),
       ),
@@ -795,6 +745,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
       stream: FirebaseFirestore.instance.collection('canciones').snapshots(),
       builder: (context, snapshot) {
         Map<String, dynamic>? song;
+        String? songId;
         if (snapshot.hasData) {
           for (final doc in snapshot.data!.docs) {
             final data = doc.data();
@@ -802,6 +753,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                 ((data['title'] ?? data['titulo']) == 'Baby' &&
                     (data['artist'] ?? data['subtitulo']) == 'Justin Bieber')) {
               song = data;
+              songId = doc.id;
               if (data['isMiniPlayerCurrent'] == true) break;
             }
           }
@@ -834,6 +786,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                                 artist,
                                 imageUrl,
                                 audioUrl,
+                                songId ?? '',
                               ),
                         child: Row(
                           children: [
@@ -856,7 +809,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: AppTypography.label2.copyWith(
-                                      color: Colors.white,
+                                      color: AppColors.neutral0,
                                     ),
                                   ),
                                   Text(
@@ -883,6 +836,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                             artist,
                             imageUrl,
                             audioUrl,
+                            songId ?? '',
                           );
                           if (state.data?.playing == true) {
                             await player.pause();
@@ -991,7 +945,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
           Text(
             label,
             style: AppTypography.caption.copyWith(
-              color: selected ? Colors.white : AppColors.neutral300,
+              color: selected ? AppColors.neutral0 : AppColors.neutral300,
               letterSpacing: 1.1,
             ),
           ),
@@ -1085,16 +1039,18 @@ class _PlaylistsViewState extends State<PlaylistsView> {
     String artist,
     String imageUrl,
     String audioUrl,
+    String songId,
   ) async {
     final player = widget.audioPlayer;
     if (player == null) return;
-    widget.onSongSelected?.call(title, artist, imageUrl, audioUrl);
+    widget.onSongSelected?.call(title, artist, imageUrl, audioUrl, songId);
     await Navigator.of(context).push(
       PageRouteBuilder<void>(
         transitionDuration: Duration.zero,
         reverseTransitionDuration: Duration.zero,
         pageBuilder: (_, animation, secondaryAnimation) => PlayerScreen(
           audioPlayer: player,
+          songId: songId,
           title: title,
           artist: artist,
           imageUrl: imageUrl,
@@ -1163,7 +1119,7 @@ class _LibraryCard extends StatelessWidget {
         title,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: AppTypography.label1.copyWith(color: Colors.white),
+        style: AppTypography.label1.copyWith(color: AppColors.neutral0),
       ),
       const SizedBox(height: 2),
       Text(

@@ -1,0 +1,49 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Solo la cuenta propietaria puede administrar el catálogo de canciones.
+    function isCatalogAdmin() {
+      return signedIn()
+        && request.auth.token.email == 'sofii.onatee@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+
+    function ownsPlaylist() {
+      return signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    match /canciones/{songId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isCatalogAdmin();
+    }
+
+    match /audios/{audioId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isCatalogAdmin();
+    }
+
+    match /playlists/{playlistId} {
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.songIds is list
+        && request.resource.data.songs is list;
+
+      allow read, delete: if ownsPlaylist();
+
+      allow update: if ownsPlaylist()
+        && request.resource.data.userId == resource.data.userId;
+    }
+
+    // Cada usuario solo puede leer y editar sus propias canciones favoritas.
+    match /users/{userId}/favorites/{songId} {
+      allow read, create, update, delete: if signedIn()
+        && request.auth.uid == userId;
+    }
+  }
+}
