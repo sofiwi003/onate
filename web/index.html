@@ -65,6 +65,10 @@
     }
 
     .center {
+      width: min(80vw, 961px);
+      max-height: 80vh;
+      height: auto;
+      object-fit: contain;
       margin: 0;
       position: absolute;
       top: 50%;
@@ -114,8 +118,9 @@
     function removeSplashFromWeb() {
       document.getElementById("splash")?.remove();
       document.getElementById("splash-branding")?.remove();
-      document.body.style.background = "transparent";
+      document.body.style.background = "#1C1C22";
     }
+    window.addEventListener("flutter-first-frame", removeSplashFromWeb);
   </script>
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 </head>
