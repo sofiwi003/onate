@@ -98,8 +98,9 @@ String _primaryArtistName(String artist) {
     caseSensitive: false,
   );
   final featuredArtist = featuring.firstMatch(trimmed);
-  if (featuredArtist != null)
+  if (featuredArtist != null) {
     return trimmed.substring(0, featuredArtist.start).trim();
+  }
   if (trimmed.contains(',')) return trimmed.split(',').first.trim();
   return trimmed;
 }
@@ -1586,7 +1587,6 @@ class _SearchSheetState extends State<SearchSheet> {
   late final Stream<QuerySnapshot<Map<String, dynamic>>> _songsStream;
   late final Stream<QuerySnapshot<Map<String, dynamic>>>? _recentSearchStream;
   String _selectedTab = 'All';
-  bool _isFocused = false;
   bool _handleDragClosed = false;
   double _handleDragDistance = 0;
 
@@ -1606,20 +1606,13 @@ class _SearchSheetState extends State<SearchSheet> {
               .orderBy('updatedAt', descending: true)
               .limit(20)
               .snapshots();
-    _focusNode.addListener(_handleFocusChange);
   }
 
   @override
   void dispose() {
-    _focusNode
-      ..removeListener(_handleFocusChange)
-      ..dispose();
+    _focusNode.dispose();
     _controller.dispose();
     super.dispose();
-  }
-
-  void _handleFocusChange() {
-    if (mounted) setState(() => _isFocused = _focusNode.hasFocus);
   }
 
   String _searchKey(String value) => value
