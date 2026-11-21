@@ -48,6 +48,21 @@ class _PlaylistsViewState extends State<PlaylistsView> {
   int _selectedTab = 2;
   bool _showCreateOptions = false;
   DocumentSnapshot<Map<String, dynamic>>? _openedPlaylist;
+  List<PlayerTrack> _activePlaylistQueue = const [];
+  int _activePlaylistIndex = 0;
+
+  List<PlayerTrack> _tracksFromDocuments(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
+  ) => documents.map((doc) {
+    final data = doc.data();
+    return PlayerTrack(
+      id: doc.id,
+      title: (data['title'] ?? data['titulo'] ?? 'Untitled').toString(),
+      artist: (data['artist'] ?? data['subtitulo'] ?? '').toString(),
+      imageUrl: (data['imageUrl'] ?? '').toString(),
+      audioUrl: songAudioValue(data),
+    );
+  }).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -136,9 +151,8 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                 'My Library',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.subtitle2.copyWith(
+                style: AppTypography.headline1.copyWith(
                   color: AppColors.neutral0,
-                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -254,7 +268,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                   (data['title'] ?? 'Sin título').toString(),
                   (data['artist'] ?? 'Artista').toString(),
                   (data['imageUrl'] ?? '').toString(),
-                  (data['audioUrl'] ?? '').toString(),
+                  songAudioValue(data),
                   song.id,
                 ),
                 child: _LibraryCard(
@@ -412,6 +426,10 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                 Future<void> playFromPlaylist(
                   QueryDocumentSnapshot<Map<String, dynamic>> document,
                 ) async {
+                  _activePlaylistQueue = _tracksFromDocuments(songs);
+                  _activePlaylistIndex = songs.indexWhere(
+                    (song) => song.id == document.id,
+                  );
                   final song = document.data();
                   final songTitle =
                       (song['title'] ?? song['titulo'] ?? 'Sin título')
@@ -419,7 +437,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                   final songArtist = (song['artist'] ?? song['subtitulo'] ?? '')
                       .toString();
                   final songImage = (song['imageUrl'] ?? '').toString();
-                  final songAudio = (song['audioUrl'] ?? '').toString();
+                  final songAudio = songAudioValue(song);
                   widget.onSongSelected?.call(
                     songTitle,
                     songArtist,
@@ -467,7 +485,12 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                             dimension: coverSize,
                             child: coverUrl.isEmpty
                                 ? PlaylistsView._emptyCover()
-                                : Image.network(coverUrl, fit: BoxFit.cover),
+                                : Image.network(
+                                    coverUrl,
+                                    fit: BoxFit.cover,
+                                    webHtmlElementStrategy:
+                                        WebHtmlElementStrategy.fallback,
+                                  ),
                           ),
                         ),
                       ),
@@ -559,16 +582,23 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                                 .toString();
                         final songImage = (songData['imageUrl'] ?? '')
                             .toString();
-                        final songAudio = (songData['audioUrl'] ?? '')
-                            .toString();
+                        final songAudio = songAudioValue(songData);
                         return InkWell(
-                          onTap: () => _openPlayer(
-                            songTitle,
-                            songArtist,
-                            songImage,
-                            songAudio,
-                            document.id,
-                          ),
+                          onTap: () {
+                            _activePlaylistQueue = _tracksFromDocuments(songs);
+                            _activePlaylistIndex = songs.indexWhere(
+                              (song) => song.id == document.id,
+                            );
+                            _openPlayer(
+                              songTitle,
+                              songArtist,
+                              songImage,
+                              songAudio,
+                              document.id,
+                              queue: _activePlaylistQueue,
+                              queueIndex: _activePlaylistIndex,
+                            );
+                          },
                           child: SizedBox(
                             height: 72,
                             child: Row(
@@ -746,24 +776,38 @@ class _PlaylistsViewState extends State<PlaylistsView> {
       builder: (context, snapshot) {
         Map<String, dynamic>? song;
         String? songId;
+        if (_activePlaylistQueue.isNotEmpty &&
+            _activePlaylistIndex >= 0 &&
+            _activePlaylistIndex < _activePlaylistQueue.length) {
+          final track = _activePlaylistQueue[_activePlaylistIndex];
+          song = {
+            'title': track.title,
+            'artist': track.artist,
+            'imageUrl': track.imageUrl,
+            'audioUrl': track.audioUrl,
+          };
+          songId = track.id;
+        }
+        final source = widget.audioPlayer!.audioSource;
         if (snapshot.hasData) {
           for (final doc in snapshot.data!.docs) {
             final data = doc.data();
-            if (data['isMiniPlayerCurrent'] == true ||
-                ((data['title'] ?? data['titulo']) == 'Baby' &&
-                    (data['artist'] ?? data['subtitulo']) == 'Justin Bieber')) {
+            final matchesPlayingTrack =
+                source is UriAudioSource &&
+                songAudioValue(data) == source.uri.toString();
+            if (matchesPlayingTrack ||
+                (song == null && data['isMiniPlayerCurrent'] == true)) {
               song = data;
               songId = doc.id;
-              if (data['isMiniPlayerCurrent'] == true) break;
+              if (matchesPlayingTrack) break;
             }
           }
         }
-        final title = (song?['title'] ?? song?['titulo'] ?? 'Baby').toString();
-        final artist =
-            (song?['artist'] ?? song?['subtitulo'] ?? 'Justin Bieber')
-                .toString();
+        final title = (song?['title'] ?? song?['titulo'] ?? '').toString();
+        if (title.isEmpty) return const SizedBox(height: 8);
+        final artist = (song?['artist'] ?? song?['subtitulo'] ?? '').toString();
         final imageUrl = (song?['imageUrl'] ?? '').toString();
-        final audioUrl = (song?['audioUrl'] ?? '').toString();
+        final audioUrl = songAudioValue(song!);
         final player = widget.audioPlayer!;
         return Padding(
           padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
@@ -779,15 +823,13 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                     Expanded(
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onTap: song == null
-                            ? null
-                            : () => _openPlayer(
-                                title,
-                                artist,
-                                imageUrl,
-                                audioUrl,
-                                songId ?? '',
-                              ),
+                        onTap: () => _openPlayer(
+                          title,
+                          artist,
+                          imageUrl,
+                          audioUrl,
+                          songId ?? '',
+                        ),
                         child: Row(
                           children: [
                             ClipRRect(
@@ -831,17 +873,24 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                       stream: player.playerStateStream,
                       builder: (context, state) => IconButton(
                         onPressed: () async {
-                          widget.onSongSelected?.call(
-                            title,
-                            artist,
-                            imageUrl,
+                          final selectedUrl = await resolveSongAudioUrl(
                             audioUrl,
-                            songId ?? '',
                           );
-                          if (state.data?.playing == true) {
+                          final activeSource = player.audioSource;
+                          final sameTrack =
+                              activeSource is UriAudioSource &&
+                              activeSource.uri.toString() == selectedUrl;
+                          if (state.data?.playing == true && sameTrack) {
                             await player.pause();
                           } else {
                             try {
+                              widget.onSongSelected?.call(
+                                title,
+                                artist,
+                                imageUrl,
+                                audioUrl,
+                                songId ?? '',
+                              );
                               final started = await playAudioTrack(
                                 player,
                                 title: title,
@@ -965,6 +1014,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
       : Image.network(
           imageUrl,
           fit: BoxFit.cover,
+          webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
           errorBuilder: (_, _, _) => Container(
             color: AppColors.neutral600,
             child: const Icon(
@@ -1039,15 +1089,38 @@ class _PlaylistsViewState extends State<PlaylistsView> {
     String artist,
     String imageUrl,
     String audioUrl,
-    String songId,
-  ) async {
+    String songId, {
+    List<PlayerTrack> queue = const [],
+    int queueIndex = 0,
+  }) async {
     final player = widget.audioPlayer;
     if (player == null) return;
     widget.onSongSelected?.call(title, artist, imageUrl, audioUrl, songId);
+    try {
+      final started = await playAudioTrack(
+        player,
+        title: title,
+        audioUrl: audioUrl,
+      );
+      if (!started && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No hay audio disponible para esta canción.'),
+          ),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo reproducir la canción: $error')),
+        );
+      }
+    }
+    if (!mounted) return;
     await Navigator.of(context).push(
       PageRouteBuilder<void>(
-        transitionDuration: Duration.zero,
-        reverseTransitionDuration: Duration.zero,
+        transitionDuration: const Duration(milliseconds: 320),
+        reverseTransitionDuration: const Duration(milliseconds: 260),
         pageBuilder: (_, animation, secondaryAnimation) => PlayerScreen(
           audioPlayer: player,
           songId: songId,
@@ -1056,8 +1129,36 @@ class _PlaylistsViewState extends State<PlaylistsView> {
           imageUrl: imageUrl,
           audioUrl: audioUrl,
           selectedNavigationIndex: 2,
+          queue: queue.isEmpty ? _activePlaylistQueue : queue,
+          queueIndex: queue.isEmpty ? _activePlaylistIndex : queueIndex,
+          onSongChanged: (track) {
+            final index = _activePlaylistQueue.indexWhere(
+              (item) => item.id == track.id,
+            );
+            if (index >= 0) _activePlaylistIndex = index;
+            widget.onSongSelected?.call(
+              track.title,
+              track.artist,
+              track.imageUrl,
+              track.audioUrl,
+              track.id,
+            );
+          },
         ),
-        transitionsBuilder: (_, _, _, child) => child,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final curvedAnimation = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          );
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 1),
+              end: Offset.zero,
+            ).animate(curvedAnimation),
+            child: child,
+          );
+        },
       ),
     );
   }
@@ -1103,6 +1204,7 @@ class _LibraryCard extends StatelessWidget {
                 : Image.network(
                     imageUrl,
                     fit: BoxFit.cover,
+                    webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                     errorBuilder: (_, _, _) => Container(
                       color: AppColors.neutral700,
                       child: const Icon(
@@ -1424,6 +1526,9 @@ class _PlaylistFormSheetState extends State<_PlaylistFormSheet> {
                                               widget.initialData!['coverUrl']
                                                   .toString(),
                                               fit: BoxFit.cover,
+                                              webHtmlElementStrategy:
+                                                  WebHtmlElementStrategy
+                                                      .fallback,
                                               errorBuilder: (_, _, _) =>
                                                   const Center(
                                                     child: Icon(
@@ -1666,7 +1771,11 @@ class _PlaylistFormSheetState extends State<_PlaylistFormSheet> {
             height: 36,
             child: song.imageUrl.isEmpty
                 ? PlaylistsView._emptyCover()
-                : Image.network(song.imageUrl, fit: BoxFit.cover),
+                : Image.network(
+                    song.imageUrl,
+                    fit: BoxFit.cover,
+                    webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
+                  ),
           ),
         ),
         const SizedBox(width: 12),
@@ -1804,6 +1913,8 @@ class _SongPickerSheetState extends State<_SongPickerSheet> {
                               : Image.network(
                                   song.imageUrl,
                                   fit: BoxFit.cover,
+                                  webHtmlElementStrategy:
+                                      WebHtmlElementStrategy.fallback,
                                   errorBuilder: (_, _, _) =>
                                       PlaylistsView._emptyCover(),
                                 ),

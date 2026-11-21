@@ -114,6 +114,8 @@ class AppColors {
   static const neutral700 = Color(0xFF2C2C32);
   static const neutral800 = Color(0xFF1C1C22); // BASE
   static const neutral900 = Color(0xFF0D0D0A);
+  static const searchSurface = Color(0xFF121217);
+  static const searchField = Color(0xFF4A4A54);
 
   // ECHO
   static const echo50 = Color(0xFFFFE1EB);

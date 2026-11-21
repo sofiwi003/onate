@@ -8,6 +8,7 @@ environment:
 
 dependencies:
   cloud_firestore: ^7.0.0
+  audio_session: ^0.2.4
   file_picker: 10.3.10
   firebase_auth: ^7.0.1
   firebase_core: ^5.0.0
@@ -27,9 +28,20 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_native_splash: ^2.4.8
 
 flutter:
   uses-material-design: true
   assets:
     - assets/images/logo.png
     - assets/icons/
+
+flutter_native_splash:
+  color: "#1C1C22"
+  image: assets/images/audiomack_splash.png
+  android: true
+  ios: true
+  web: false
+  android_12:
+    color: "#1C1C22"
+    image: assets/images/audiomack_splash.png

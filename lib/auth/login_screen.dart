@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -46,15 +47,16 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => cargando = true);
 
     try {
-      final googleUser = await GoogleSignIn.instance.authenticate();
-
-      final googleAuth = googleUser.authentication;
-
-      final credential = GoogleAuthProvider.credential(
-        idToken: googleAuth.idToken,
-      );
-
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      if (kIsWeb) {
+        await FirebaseAuth.instance.signInWithPopup(GoogleAuthProvider());
+      } else {
+        final googleUser = await GoogleSignIn.instance.authenticate();
+        final googleAuth = googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          idToken: googleAuth.idToken,
+        );
+        await FirebaseAuth.instance.signInWithCredential(credential);
+      }
     } on GoogleSignInException catch (e) {
       if (!mounted) return;
 

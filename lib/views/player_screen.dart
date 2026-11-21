@@ -5,34 +5,105 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:just_audio/just_audio.dart';
 
 import '../theme/theme.dart';
+
+String songAudioValue(Map<String, dynamic> data) {
+  // `archivo` es la ruta única del objeto en Storage. Si también guardaron
+  // una URL de descarga duplicada o antigua, conservar la ruta evita repetirla.
+  final storagePath = (data['archivo'] ?? data['storagePath'] ?? '')
+      .toString()
+      .trim();
+  if (storagePath.isNotEmpty) return storagePath;
+  return (data['audioUrl'] ?? data['url'] ?? '').toString().trim();
+}
+
+Future<String> resolveSongAudioUrl(String value) async {
+  final candidate = value.trim();
+  if (candidate.isEmpty) return '';
+  final uri = Uri.tryParse(candidate);
+  if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
+    return candidate;
+  }
+  final reference = candidate.startsWith('gs://')
+      ? FirebaseStorage.instance.refFromURL(candidate)
+      : FirebaseStorage.instance.ref(
+          candidate.replaceFirst(RegExp(r'^/+'), ''),
+        );
+  return reference.getDownloadURL();
+}
+
+class PlayerTrack {
+  const PlayerTrack({
+    required this.id,
+    required this.title,
+    required this.artist,
+    required this.imageUrl,
+    required this.audioUrl,
+  });
+
+  final String id;
+  final String title;
+  final String artist;
+  final String imageUrl;
+  final String audioUrl;
+}
+
+int _audioRequestVersion = 0;
+Future<void> _audioOperationTail = Future<void>.value();
 
 Future<bool> playAudioTrack(
   AudioPlayer player, {
   required String title,
   required String audioUrl,
+  bool autoplay = true,
 }) async {
-  var url = audioUrl;
+  final requestVersion = ++_audioRequestVersion;
+  final url = await resolveSongAudioUrl(audioUrl);
+  if (requestVersion != _audioRequestVersion) return false;
   if (url.isEmpty) {
-    final audios = await FirebaseFirestore.instance
-        .collection('audios')
-        .where('titulo', isEqualTo: title)
-        .limit(1)
-        .get();
-    if (audios.docs.isNotEmpty) {
-      url = (audios.docs.first.data()['url'] ?? '').toString();
-    }
+    final stopped = Completer<bool>();
+    _audioOperationTail = _audioOperationTail.catchError((_) {}).then((
+      _,
+    ) async {
+      if (requestVersion == _audioRequestVersion) await player.stop();
+      stopped.complete(false);
+    });
+    return stopped.future;
   }
-  if (url.isEmpty) return false;
 
-  final currentSource = player.audioSource;
-  if (currentSource is! UriAudioSource || currentSource.uri.toString() != url) {
-    await player.setUrl(url);
-  }
-  await player.play();
-  return true;
+  final result = Completer<bool>();
+  _audioOperationTail = _audioOperationTail.catchError((_) {}).then((_) async {
+    if (requestVersion != _audioRequestVersion) {
+      result.complete(false);
+      return;
+    }
+    try {
+      final currentSource = player.audioSource;
+      if (currentSource is! UriAudioSource ||
+          currentSource.uri.toString() != url) {
+        // Detén explícitamente la decodificación actual antes de asignar otra
+        // URL. En web, cambiar el source mientras sigue reproduciéndose puede
+        // dejar activo el audio anterior aunque la pantalla ya muestre el nuevo.
+        await player.stop();
+        await player.setUrl(url);
+      }
+      if (requestVersion != _audioRequestVersion) {
+        result.complete(false);
+        return;
+      }
+      // Cada pista debe comenzar a velocidad normal. Esto evita conservar un
+      // valor de reproducción alterado por la sesión multimedia del sistema.
+      await player.setSpeed(1.0);
+      if (autoplay) unawaited(player.play());
+      result.complete(true);
+    } catch (error, stackTrace) {
+      result.completeError(error, stackTrace);
+    }
+  });
+  return result.future;
 }
 
 class PlayerScreen extends StatefulWidget {
@@ -45,6 +116,9 @@ class PlayerScreen extends StatefulWidget {
     required this.imageUrl,
     required this.audioUrl,
     this.selectedNavigationIndex = 0,
+    this.queue = const [],
+    this.queueIndex = 0,
+    this.onSongChanged,
   });
 
   final AudioPlayer audioPlayer;
@@ -54,6 +128,9 @@ class PlayerScreen extends StatefulWidget {
   final String imageUrl;
   final String audioUrl;
   final int selectedNavigationIndex;
+  final List<PlayerTrack> queue;
+  final int queueIndex;
+  final ValueChanged<PlayerTrack>? onSongChanged;
 
   @override
   State<PlayerScreen> createState() => _PlayerScreenState();
@@ -61,6 +138,9 @@ class PlayerScreen extends StatefulWidget {
 
 class _PlayerScreenState extends State<PlayerScreen> {
   AudioPlayer get _player => widget.audioPlayer;
+  late PlayerTrack _currentTrack;
+  late int _currentQueueIndex;
+  int _loadGeneration = 0;
 
   bool _liked = false;
   bool _loading = false;
@@ -83,6 +163,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   void initState() {
     super.initState();
+    _currentTrack = PlayerTrack(
+      id: widget.songId,
+      title: widget.title,
+      artist: widget.artist,
+      imageUrl: widget.imageUrl,
+      audioUrl: widget.audioUrl,
+    );
+    _currentQueueIndex = widget.queueIndex;
 
     _playerStateSubscription = _player.playerStateStream.listen((state) {
       if (!mounted) return;
@@ -117,12 +205,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   DocumentReference<Map<String, dynamic>>? get _favoriteReference {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null || widget.songId.isEmpty) return null;
+    if (user == null || _currentTrack.id.isEmpty) return null;
     return FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
         .collection('favorites')
-        .doc(widget.songId);
+        .doc(_currentTrack.id);
   }
 
   void _listenForFavorite() {
@@ -147,11 +235,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
         await reference.delete();
       } else {
         await reference.set({
-          'songId': widget.songId,
-          'title': widget.title,
-          'artist': widget.artist,
-          'imageUrl': widget.imageUrl,
-          'audioUrl': widget.audioUrl,
+          'songId': _currentTrack.id,
+          'title': _currentTrack.title,
+          'artist': _currentTrack.artist,
+          'imageUrl': _currentTrack.imageUrl,
+          'audioUrl': _currentTrack.audioUrl,
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
@@ -167,53 +255,89 @@ class _PlayerScreenState extends State<PlayerScreen> {
     bool autoplay = false,
     bool notifyMissing = false,
   }) async {
-    if (_loading) return;
+    final generation = ++_loadGeneration;
+    final requestedTrack = _currentTrack;
     setState(() => _loading = true);
 
     try {
-      var url = widget.audioUrl;
-
-      // El formulario del profesor guarda los audios en esta colección.
-      if (url.isEmpty) {
-        final audios = await FirebaseFirestore.instance
-            .collection('audios')
-            .where('titulo', isEqualTo: widget.title)
-            .limit(1)
+      var audioValue = requestedTrack.audioUrl;
+      if (audioValue.isEmpty) {
+        final songs = await FirebaseFirestore.instance
+            .collection('canciones')
             .get();
-
-        if (audios.docs.isNotEmpty) {
-          url = (audios.docs.first.data()['url'] ?? '').toString();
-        }
+        final match = songs.docs.where((doc) {
+          final data = doc.data();
+          final title = (data['title'] ?? data['titulo'] ?? '').toString();
+          final artist = (data['artist'] ?? data['subtitulo'] ?? '').toString();
+          return title == requestedTrack.title &&
+              artist == requestedTrack.artist &&
+              songAudioValue(data).isNotEmpty;
+        });
+        if (match.isNotEmpty) audioValue = songAudioValue(match.first.data());
       }
+      if (generation != _loadGeneration) return;
 
-      if (url.isEmpty) {
+      if (audioValue.isEmpty) {
+        await playAudioTrack(
+          _player,
+          title: requestedTrack.title,
+          audioUrl: '',
+        );
+        if (generation != _loadGeneration) return;
+        if (mounted) setState(() => _audioLoaded = false);
         if (notifyMissing) {
           _showMessage('Todavía no hay un archivo de audio para esta canción.');
         }
         return;
       }
 
-      // Home y esta pantalla comparten el mismo AudioPlayer. Si ya tiene
-      // cargada esta canción, no volvemos a asignarla ni reiniciamos su tiempo.
-      final currentSource = _player.audioSource;
-      if (currentSource is UriAudioSource &&
-          currentSource.uri.toString() == url) {
-        if (mounted) setState(() => _audioLoaded = true);
-        return;
-      }
-
-      await _player.setUrl(url);
+      final loaded = await playAudioTrack(
+        _player,
+        title: requestedTrack.title,
+        audioUrl: audioValue,
+        autoplay: autoplay,
+      );
+      if (generation != _loadGeneration) return;
+      if (!loaded) return;
       if (!mounted) return;
       setState(() => _audioLoaded = true);
-
-      if (autoplay) _player.play();
     } catch (error) {
-      if (notifyMissing) {
+      if (generation == _loadGeneration) await _player.stop();
+      if (mounted && generation == _loadGeneration) {
+        setState(() => _audioLoaded = false);
+      }
+      if (notifyMissing && generation == _loadGeneration) {
         _showMessage('No se pudo cargar el audio: $error');
       }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && generation == _loadGeneration) {
+        setState(() => _loading = false);
+      }
     }
+  }
+
+  Future<void> _playAdjacentTrack(int offset) async {
+    if (widget.queue.isEmpty) {
+      if (offset > 0) _showMessage('No hay otra canción en la cola.');
+      return;
+    }
+    final nextIndex = _currentQueueIndex + offset;
+    if (nextIndex < 0 || nextIndex >= widget.queue.length) {
+      if (offset > 0) _showMessage('Llegaste al final de esta playlist.');
+      return;
+    }
+    final nextTrack = widget.queue[nextIndex];
+    await _favoriteSubscription?.cancel();
+    setState(() {
+      _currentTrack = nextTrack;
+      _currentQueueIndex = nextIndex;
+      _liked = false;
+      _audioLoaded = false;
+      _position = Duration.zero;
+    });
+    _listenForFavorite();
+    widget.onSongChanged?.call(nextTrack);
+    await _loadAudio(autoplay: true, notifyMissing: true);
   }
 
   Future<void> _togglePlayback() async {
@@ -285,8 +409,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
                           width: coverSize,
                           height: coverSize,
                           child: Image.network(
-                            widget.imageUrl,
+                            _currentTrack.imageUrl,
+                            key: ValueKey(_currentTrack.imageUrl),
                             fit: BoxFit.cover,
+                            webHtmlElementStrategy:
+                                WebHtmlElementStrategy.fallback,
                             errorBuilder: (context, error, stackTrace) =>
                                 Container(
                                   color: AppColors.neutral700,
@@ -310,7 +437,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  widget.title,
+                                  _currentTrack.title,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
@@ -322,7 +449,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  widget.artist,
+                                  _currentTrack.artist,
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w300,
@@ -481,14 +608,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
           },
         ),
       ),
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            color: AppColors.neutral900,
-            child: SafeArea(top: false, child: _bottomNavigationBar(context)),
-          ),
-        ],
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          color: AppColors.neutral900,
+          child: _bottomNavigationBar(context),
+        ),
       ),
     );
   }
@@ -650,8 +775,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Widget _seekButton({required bool previous}) {
     return GestureDetector(
       onTap: () {
-        if (previous) {
+        if (previous && widget.queue.isNotEmpty && _currentQueueIndex > 0) {
+          _playAdjacentTrack(-1);
+        } else if (previous) {
           _player.seek(Duration.zero);
+        } else if (widget.queue.isNotEmpty) {
+          _playAdjacentTrack(1);
         } else {
           _showMessage('No hay otra canción en la cola.');
         }
