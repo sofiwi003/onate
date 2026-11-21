@@ -367,11 +367,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     builder: (context, favoritesSnapshot) {
                       final favoriteArtists =
                           (favoritesSnapshot.data?.docs ?? [])
-                              .map(
-                                (doc) => _primaryArtistName(
-                                  (doc.data()['artist'] ?? '').toString(),
-                                ),
-                              )
+                              .map((doc) {
+                                final favoriteSong = songsById[doc.id];
+                                final artist = favoriteSong == null
+                                    ? (doc.data()['artist'] ?? '').toString()
+                                    : (favoriteSong.data()['artist'] ??
+                                              favoriteSong
+                                                  .data()['subtitulo'] ??
+                                              '')
+                                          .toString();
+                                return _primaryArtistName(artist);
+                              })
                               .where((artist) => artist.isNotEmpty)
                               .toSet()
                               .toList()
@@ -612,8 +618,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (candidateArtist == favoriteArtist ||
                     candidateArtist.startsWith('$favoriteArtist,') ||
                     candidateArtist.startsWith('$favoriteArtist ')) {
-                  representative = candidate;
-                  break;
+                  if (representative == null ||
+                      (representative.artistImageUrl.isEmpty &&
+                          candidate.artistImageUrl.isNotEmpty)) {
+                    representative = candidate;
+                  }
                 }
               }
               final artistImageUrl = representative?.artistImageUrl ?? '';

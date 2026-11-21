@@ -34,6 +34,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/logo.png
+    - assets/images/audiomack_splash.png
     - assets/icons/
 
 flutter_native_splash:
@@ -41,7 +42,7 @@ flutter_native_splash:
   image: assets/images/audiomack_splash.png
   android: true
   ios: true
-  web: false
+  web: true
   android_12:
     color: "#1C1C22"
     image: assets/images/audiomack_splash.png
