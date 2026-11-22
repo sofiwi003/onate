@@ -240,6 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     PlaylistsView(
                       audioPlayer: _audioPlayer,
                       embedded: true,
+                      hasMiniPlayer: _currentSong != null,
                       onPlaylistSaved: () => setState(() => _selectedIndex = 2),
                       onSongSelected:
                           (title, artist, imageUrl, audioUrl, songId) {

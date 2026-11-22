@@ -17,12 +17,14 @@ class PlaylistsView extends StatefulWidget {
     super.key,
     this.audioPlayer,
     this.embedded = false,
+    this.hasMiniPlayer = false,
     this.onPlaylistSaved,
     this.onSongSelected,
   });
 
   final AudioPlayer? audioPlayer;
   final bool embedded;
+  final bool hasMiniPlayer;
   final VoidCallback? onPlaylistSaved;
   final void Function(
     String title,
@@ -95,7 +97,15 @@ class _PlaylistsViewState extends State<PlaylistsView> {
         children: [
           content,
           if (_selectedTab == 2 && _openedPlaylist == null)
-            Positioned(right: 16, bottom: 16, child: _createMenu()),
+            Positioned(
+              right: 16,
+              bottom:
+                  60 +
+                  MediaQuery.viewPaddingOf(context).bottom +
+                  (widget.hasMiniPlayer ? 64 : 0) +
+                  40,
+              child: _createMenu(),
+            ),
         ],
       );
     }
