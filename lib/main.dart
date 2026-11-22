@@ -17,19 +17,45 @@ import 'views/playlists.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  if (!kIsWeb) {
-    await GoogleSignIn.instance.initialize();
+  String? startupError;
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    ).timeout(const Duration(seconds: 15));
+  } catch (error, stackTrace) {
+    startupError = error.toString();
+    debugPrint('Firebase initialization failed: $error\n$stackTrace');
   }
-  if (!kIsWeb) {
+
+  runApp(MainApp(startupError: startupError));
+
+  // Native services are optional for the first frame. Initializing them
+  // before runApp can leave Android showing only a black window if a plugin
+  // stalls during startup.
+  if (!kIsWeb && startupError == null) {
+    _initializeNativeServices();
+  }
+}
+
+Future<void> _initializeNativeServices() async {
+  try {
+    await GoogleSignIn.instance.initialize();
+  } catch (error, stackTrace) {
+    debugPrint('Google Sign-In initialization failed: $error\n$stackTrace');
+  }
+
+  try {
     final audioSession = await AudioSession.instance;
     await audioSession.configure(const AudioSessionConfiguration.music());
+  } catch (error, stackTrace) {
+    debugPrint('Audio session initialization failed: $error\n$stackTrace');
   }
-  runApp(const MainApp());
 }
 
 class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+  const MainApp({super.key, this.startupError});
+
+  final String? startupError;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +63,42 @@ class MainApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Audiomack',
       theme: audioMack,
-      home: const AuthGate(),
+      home: startupError == null
+          ? const AuthGate()
+          : StartupErrorScreen(message: startupError!),
+    );
+  }
+}
+
+class StartupErrorScreen extends StatelessWidget {
+  const StartupErrorScreen({super.key, required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.wifi_off, size: 42),
+                const SizedBox(height: 16),
+                const Text(
+                  'No se pudo iniciar Audiomack',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(message, textAlign: TextAlign.center),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -147,77 +208,99 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final discoverBackground = _selectedIndex == 1
+        ? BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: _selectedMood == 'Pulse'
+                  ? [AppColors.pulse500, AppColors.pulse800]
+                  : _selectedMood == 'Bloom'
+                  ? [AppColors.bloom500, AppColors.bloom800]
+                  : [AppColors.echo500, AppColors.echo800],
+              stops: const [0.2, 1],
+            ),
+          )
+        : BoxDecoration(color: colors.surface);
 
-    return Scaffold(
-      backgroundColor: colors.surface,
-      body: LayoutBuilder(
-        builder: (context, constraints) => Stack(
-          children: [
-            Positioned.fill(
-              child: IndexedStack(
-                index: _selectedIndex,
-                children: [
-                  _homeContent(colors),
-                  _discoverContent(colors),
-                  PlaylistsView(
-                    audioPlayer: _audioPlayer,
-                    embedded: true,
-                    onPlaylistSaved: () => setState(() => _selectedIndex = 2),
-                    onSongSelected:
-                        (title, artist, imageUrl, audioUrl, songId) {
-                          final song = Song(
-                            id: songId,
-                            title: title,
-                            artist: artist,
-                            imageUrl: imageUrl,
-                            audioUrl: audioUrl,
-                          );
-                          setState(() => _currentSong = song);
-                          _markRecentlyPlayed(song);
-                        },
-                  ),
-                ],
+    return DecoratedBox(
+      decoration: discoverBackground,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        extendBody: true,
+        body: LayoutBuilder(
+          builder: (context, constraints) => Stack(
+            children: [
+              Positioned.fill(
+                child: IndexedStack(
+                  index: _selectedIndex,
+                  children: [
+                    _homeContent(colors),
+                    _discoverContent(colors),
+                    PlaylistsView(
+                      audioPlayer: _audioPlayer,
+                      embedded: true,
+                      onPlaylistSaved: () => setState(() => _selectedIndex = 2),
+                      onSongSelected:
+                          (title, artist, imageUrl, audioUrl, songId) {
+                            final song = Song(
+                              id: songId,
+                              title: title,
+                              artist: artist,
+                              imageUrl: imageUrl,
+                              audioUrl: audioUrl,
+                            );
+                            setState(() => _currentSong = song);
+                            _markRecentlyPlayed(song);
+                          },
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Positioned.fill(
-              child: IgnorePointer(
-                ignoring: !_isSearchOpen,
-                child: GestureDetector(
-                  onTap: _closeSearch,
-                  child: AnimatedOpacity(
-                    opacity: _isSearchOpen ? 0.62 : 0,
-                    duration: const Duration(milliseconds: 260),
-                    child: const ColoredBox(color: Colors.black),
+              Positioned.fill(
+                child: IgnorePointer(
+                  ignoring: !_isSearchOpen,
+                  child: GestureDetector(
+                    onTap: _closeSearch,
+                    child: AnimatedOpacity(
+                      opacity: _isSearchOpen ? 0.62 : 0,
+                      duration: const Duration(milliseconds: 260),
+                      child: const ColoredBox(color: Colors.black),
+                    ),
                   ),
                 ),
               ),
-            ),
-            AnimatedPositioned(
-              duration: Duration(milliseconds: _isSearchOpen ? 340 : 260),
-              curve: _isSearchOpen ? Curves.easeOutCubic : Curves.easeInCubic,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: _isSearchOpen ? constraints.maxHeight * 0.82 : 0,
-              child: Offstage(
-                offstage: !_searchPanelMounted,
-                child: SearchSheet(
-                  onClose: _closeSearch,
-                  onPlaySong: (song) => _openPlayer(context, song),
+              AnimatedPositioned(
+                duration: Duration(milliseconds: _isSearchOpen ? 340 : 260),
+                curve: _isSearchOpen ? Curves.easeOutCubic : Curves.easeInCubic,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: _isSearchOpen ? constraints.maxHeight * 0.82 : 0,
+                child: Offstage(
+                  offstage: !_searchPanelMounted,
+                  child: SearchSheet(
+                    onClose: _closeSearch,
+                    onPlaySong: (song) => _openPlayer(context, song),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_currentSong != null) _miniPlayerInBar(context),
-            _navigationBar(colors),
-          ],
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_currentSong != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: _miniPlayerInBar(context),
+                ),
+              _navigationBar(colors),
+            ],
+          ),
         ),
       ),
     );
@@ -817,229 +900,213 @@ class _HomeScreenState extends State<HomeScreen> {
     return 'Otros';
   }
 
-  Widget _discoverContent(ColorScheme colors) => DecoratedBox(
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: _selectedMood == 'Pulse'
-            ? [AppColors.pulse500, AppColors.pulse800]
-            : _selectedMood == 'Bloom'
-            ? [AppColors.bloom500, AppColors.bloom800]
-            : [AppColors.echo500, AppColors.echo800],
-        stops: const [0.2, 1],
-      ),
-    ),
-    child: SafeArea(
-      bottom: false,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-            child: SizedBox(
-              height: 48,
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: Image.asset('assets/images/logo.png'),
-                  ),
-                  const Spacer(),
-                  _roundAction(
-                    Icons.notifications_none,
-                    colors,
-                    backgroundColor: _moodIconBackground(),
-                  ),
-                  const SizedBox(width: 8),
-                  _roundAction(
-                    Icons.person_outline,
-                    colors,
-                    backgroundColor: _moodIconBackground(),
-                  ),
-                ],
-              ),
+  Widget _discoverContent(ColorScheme colors) => SafeArea(
+    bottom: false,
+    child: Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+          child: SizedBox(
+            height: 48,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Image.asset('assets/images/logo.png'),
+                ),
+                const Spacer(),
+                _roundAction(
+                  Icons.notifications_none,
+                  colors,
+                  backgroundColor: _moodIconBackground(),
+                ),
+                const SizedBox(width: 8),
+                _roundAction(
+                  Icons.person_outline,
+                  colors,
+                  backgroundColor: _moodIconBackground(),
+                ),
+              ],
             ),
           ),
-          SizedBox(
-            height: 56,
-            width: double.infinity,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Discover',
-                  style: AppTypography.headline1.copyWith(
-                    color: AppColors.neutral0,
-                  ),
+        ),
+        SizedBox(
+          height: 56,
+          width: double.infinity,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Discover',
+                style: AppTypography.headline1.copyWith(
+                  color: AppColors.neutral0,
                 ),
               ),
             ),
           ),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: FirebaseFirestore.instance
-                  .collection('canciones')
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return const Center(
-                    child: Text('No se pudieron cargar las canciones'),
-                  );
-                }
-                if (!snapshot.hasData) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.primary500,
-                    ),
-                  );
-                }
-                final songs = snapshot.data!.docs
-                    .map((doc) => Song.fromMap(doc.data(), id: doc.id))
-                    .toList();
-                final genres =
-                    songs
-                        .map(_genreForSong)
-                        .toSet()
-                        .where((g) => g != 'Otros')
-                        .toList()
-                      ..sort();
-                const genreOrder = ['Pop', 'Reggaeton', 'Urbano latino'];
-                genres.sort((a, b) {
-                  final aRank = genreOrder.indexOf(a);
-                  final bRank = genreOrder.indexOf(b);
-                  if (aRank >= 0 || bRank >= 0) {
-                    if (aRank < 0) return 1;
-                    if (bRank < 0) return -1;
-                    return aRank.compareTo(bRank);
-                  }
-                  return a.compareTo(b);
-                });
-                final sections = _discoverShelves(
-                  _selectedMood,
-                  songs,
-                  _selectedGenre,
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream: FirebaseFirestore.instance
+                .collection('canciones')
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return const Center(
+                  child: Text('No se pudieron cargar las canciones'),
                 );
-                return Column(
-                  children: [
-                    const SizedBox(height: 14),
-                    SizedBox(
-                      height: 54,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        children: [...genres.map(_genreChip)],
-                      ),
+              }
+              if (!snapshot.hasData) {
+                return const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary500),
+                );
+              }
+              final songs = snapshot.data!.docs
+                  .map((doc) => Song.fromMap(doc.data(), id: doc.id))
+                  .toList();
+              final genres =
+                  songs
+                      .map(_genreForSong)
+                      .toSet()
+                      .where((g) => g != 'Otros')
+                      .toList()
+                    ..sort();
+              const genreOrder = ['Pop', 'Reggaeton', 'Urbano latino'];
+              genres.sort((a, b) {
+                final aRank = genreOrder.indexOf(a);
+                final bRank = genreOrder.indexOf(b);
+                if (aRank >= 0 || bRank >= 0) {
+                  if (aRank < 0) return 1;
+                  if (bRank < 0) return -1;
+                  return aRank.compareTo(bRank);
+                }
+                return a.compareTo(b);
+              });
+              final sections = _discoverShelves(
+                _selectedMood,
+                songs,
+                _selectedGenre,
+              );
+              return Column(
+                children: [
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    height: 54,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      children: [...genres.map(_genreChip)],
                     ),
-                    const SizedBox(height: 14),
-                    Center(
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 40),
-                        decoration: BoxDecoration(
-                          color: _selectedMood == 'Echo'
-                              ? AppColors.echo700
-                              : _selectedMood == 'Pulse'
-                              ? AppColors.pulse700
-                              : AppColors.bloom700,
-                          borderRadius: BorderRadius.circular(32),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: ['Echo', 'Pulse', 'Bloom'].map((m) {
-                            final selected = _selectedMood == m;
-                            return GestureDetector(
-                              onTap: () => setState(() => _selectedMood = m),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 13,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: selected
-                                      ? AppColors.actionPrimaryDefault
-                                      : AppColors.transparent,
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (selected) ...[
-                                      Container(
-                                        width: 10,
-                                        height: 10,
-                                        decoration: const BoxDecoration(
-                                          color: AppColors.neutral0,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                    ],
-                                    Text(
-                                      m,
-                                      style: TextStyle(
-                                        color: selected
-                                            ? AppColors.neutral0
-                                            : AppColors.neutral200,
-                                        fontSize: 16,
-                                        fontWeight: selected
-                                            ? FontWeight.w700
-                                            : FontWeight.w400,
+                  ),
+                  const SizedBox(height: 14),
+                  Center(
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 40),
+                      decoration: BoxDecoration(
+                        color: _selectedMood == 'Echo'
+                            ? AppColors.echo700
+                            : _selectedMood == 'Pulse'
+                            ? AppColors.pulse700
+                            : AppColors.bloom700,
+                        borderRadius: BorderRadius.circular(32),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: ['Echo', 'Pulse', 'Bloom'].map((m) {
+                          final selected = _selectedMood == m;
+                          return GestureDetector(
+                            onTap: () => setState(() => _selectedMood = m),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 13,
+                              ),
+                              decoration: BoxDecoration(
+                                color: selected
+                                    ? AppColors.actionPrimaryDefault
+                                    : AppColors.transparent,
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (selected) ...[
+                                    Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: const BoxDecoration(
+                                        color: AppColors.neutral0,
+                                        shape: BoxShape.circle,
                                       ),
                                     ),
+                                    const SizedBox(width: 8),
                                   ],
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    Expanded(
-                      child: ScrollConfiguration(
-                        behavior: const MaterialScrollBehavior().copyWith(
-                          overscroll: false,
-                        ),
-                        child: ListView(
-                          primary: false,
-                          physics: const ClampingScrollPhysics(),
-                          clipBehavior: Clip.hardEdge,
-                          padding: const EdgeInsets.fromLTRB(0, 0, 0, 22),
-                          children: sections.isEmpty
-                              ? [
-                                  Padding(
-                                    padding: const EdgeInsets.all(24),
-                                    child: Text(
-                                      'No songs in this season yet',
-                                      style: AppTypography.body2.copyWith(
-                                        color: AppColors.neutral100,
-                                      ),
-                                      textAlign: TextAlign.center,
+                                  Text(
+                                    m,
+                                    style: TextStyle(
+                                      color: selected
+                                          ? AppColors.neutral0
+                                          : AppColors.neutral200,
+                                      fontSize: 16,
+                                      fontWeight: selected
+                                          ? FontWeight.w700
+                                          : FontWeight.w400,
                                     ),
                                   ),
-                                ]
-                              : [
-                                  for (var i = 0; i < sections.length; i++) ...[
-                                    _discoverSection(
-                                      sections[i].$1,
-                                      sections[i].$2,
-                                      sections[i].$3,
-                                    ),
-                                    if (i != sections.length - 1)
-                                      const SizedBox(height: 32),
-                                  ],
                                 ],
-                        ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
                     ),
-                  ],
-                );
-              },
-            ),
+                  ),
+                  const SizedBox(height: 28),
+                  Expanded(
+                    child: ScrollConfiguration(
+                      behavior: const MaterialScrollBehavior().copyWith(
+                        overscroll: false,
+                      ),
+                      child: ListView(
+                        primary: false,
+                        physics: const ClampingScrollPhysics(),
+                        clipBehavior: Clip.hardEdge,
+                        padding: const EdgeInsets.fromLTRB(0, 0, 0, 22),
+                        children: sections.isEmpty
+                            ? [
+                                Padding(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Text(
+                                    'No songs in this season yet',
+                                    style: AppTypography.body2.copyWith(
+                                      color: AppColors.neutral100,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ]
+                            : [
+                                for (var i = 0; i < sections.length; i++) ...[
+                                  _discoverSection(
+                                    sections[i].$1,
+                                    sections[i].$2,
+                                    sections[i].$3,
+                                  ),
+                                  if (i != sections.length - 1)
+                                    const SizedBox(height: 32),
+                                ],
+                              ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     ),
   );
 
