@@ -179,10 +179,10 @@ class _ListsViewState extends State<ListsView> {
                             onPressed: guardando ? null : guardarCancion,
                             child: guardando
                                 ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
+                                    width: AppMetrics.px20,
+                                    height: AppMetrics.px20,
                                     child: CircularProgressIndicator(
-                                      strokeWidth: 2,
+                                      strokeWidth: AppMetrics.px2,
                                     ),
                                   )
                                 : Text(editando ? 'Actualizar' : 'Guardar'),

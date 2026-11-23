@@ -81,18 +81,18 @@ class StartupErrorScreen extends StatelessWidget {
       body: SafeArea(
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(AppSpacing.spacing24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.wifi_off, size: 42),
-                const SizedBox(height: 16),
+                const Icon(Icons.wifi_off, size: AppMetrics.px42),
+                const SizedBox(height: AppMetrics.px16),
                 const Text(
                   'No se pudo iniciar Audiomack',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: AppFontSize.title, fontWeight: AppFontWeight.bold),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppMetrics.px8),
                 Text(message, textAlign: TextAlign.center),
               ],
             ),
@@ -218,7 +218,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   : _selectedMood == 'Bloom'
                   ? [AppColors.bloom500, AppColors.bloom800]
                   : [AppColors.echo500, AppColors.echo800],
-              stops: const [0.2, 1],
+              stops: const [AppLayout.gradientStartStop, AppLayout.gradientEndStop],
             ),
           )
         : BoxDecoration(color: colors.surface);
@@ -226,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return DecoratedBox(
       decoration: discoverBackground,
       child: Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         extendBody: true,
         body: LayoutBuilder(
           builder: (context, constraints) => Stack(
@@ -264,9 +264,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: GestureDetector(
                     onTap: _closeSearch,
                     child: AnimatedOpacity(
-                      opacity: _isSearchOpen ? 0.62 : 0,
+                      opacity: _isSearchOpen ? AppLayout.searchScrimOpacity : AppSpacing.spacing0,
                       duration: const Duration(milliseconds: 260),
-                      child: const ColoredBox(color: Colors.black),
+                      child: const ColoredBox(color: AppColors.neutral900),
                     ),
                   ),
                 ),
@@ -274,10 +274,10 @@ class _HomeScreenState extends State<HomeScreen> {
               AnimatedPositioned(
                 duration: Duration(milliseconds: _isSearchOpen ? 340 : 260),
                 curve: _isSearchOpen ? Curves.easeOutCubic : Curves.easeInCubic,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: _isSearchOpen ? constraints.maxHeight * 0.82 : 0,
+                left: AppSpacing.spacing0,
+                right: AppSpacing.spacing0,
+                bottom: AppSpacing.spacing0,
+                height: _isSearchOpen ? constraints.maxHeight * AppLayout.searchSheetHeightFactor : 0,
                 child: Offstage(
                   offstage: !_searchPanelMounted,
                   child: SearchSheet(
@@ -296,7 +296,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               if (_currentSong != null)
                 Padding(
-                  padding: const EdgeInsets.only(top: 10),
+                  padding: const EdgeInsets.only(top: AppSpacing.spacing10),
                   child: _miniPlayerInBar(context),
                 ),
               _navigationBar(colors),
@@ -312,14 +312,14 @@ class _HomeScreenState extends State<HomeScreen> {
     child: Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.spacing16, AppSpacing.spacing4, AppSpacing.spacing16, AppSpacing.spacing0),
           child: SizedBox(
-            height: 48,
+            height: AppMetrics.px48,
             child: Row(
               children: [
                 SizedBox(
-                  width: 40,
-                  height: 40,
+                  width: AppMetrics.px40,
+                  height: AppMetrics.px40,
                   child: Image.asset(
                     'assets/images/logo.png',
                     fit: BoxFit.contain,
@@ -331,7 +331,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   colors,
                   backgroundColor: AppColors.neutral700,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppMetrics.px8),
                 _roundAction(
                   Icons.person_outline,
                   colors,
@@ -342,10 +342,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         SizedBox(
-          height: 56,
+          height: AppMetrics.px56,
           width: double.infinity,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing16),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -475,23 +475,23 @@ class _HomeScreenState extends State<HomeScreen> {
                           },
                         ),
                         child: ListView(
-                          padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
+                          padding: const EdgeInsets.fromLTRB(AppSpacing.spacing16, AppSpacing.spacing48, AppSpacing.spacing16, AppSpacing.spacing20),
                           children: [
                             _buildSongSection(
                               'Top picks for you',
                               topPicks,
                               wide: true,
                             ),
-                            const SizedBox(height: 18),
+                            const SizedBox(height: AppMetrics.px18),
                             _buildSongSection(
                               'Recently played',
                               recent,
                               subtitle: 'Based on what you hear',
                             ),
-                            const SizedBox(height: 32),
+                            const SizedBox(height: AppMetrics.px32),
                             _buildSongSection('Made for you', madeForYou),
                             if (favoriteArtists.isNotEmpty) ...[
-                              const SizedBox(height: 32),
+                              const SizedBox(height: AppMetrics.px32),
                               _buildArtistSection(favoriteArtists, songs),
                             ],
                           ],
@@ -517,13 +517,13 @@ class _HomeScreenState extends State<HomeScreen> {
     Color? backgroundColor,
   }) {
     return Container(
-      width: 38,
-      height: 38,
+      width: AppMetrics.px38,
+      height: AppMetrics.px38,
       decoration: BoxDecoration(
         color: backgroundColor ?? colors.surfaceContainer,
         shape: BoxShape.circle,
       ),
-      child: Icon(icon, color: colors.onSurface, size: 20),
+      child: Icon(icon, color: colors.onSurface, size: AppMetrics.px20),
     );
   }
 
@@ -543,17 +543,17 @@ class _HomeScreenState extends State<HomeScreen> {
     bool wide = false,
     String? subtitle,
   }) {
-    final imageWidth = wide ? 178.0 : 104.0;
-    final albumSpacing = subtitle == null ? 16.0 : 24.0;
+    final imageWidth = wide ? AppMetrics.px178 : AppMetrics.px104;
+    final albumSpacing = subtitle == null ? AppSpacing.spacing16 : AppSpacing.spacing24;
     final cardWidth = imageWidth + albumSpacing;
-    final imageHeight = 104.0;
-    final cardHeight = 161.0;
+    final imageHeight = AppMetrics.px104;
+    final cardHeight = AppMetrics.px161;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          height: subtitle == null ? 34 : 52,
+          height: subtitle == null ? AppLayout.homeCardHeightCompact : AppLayout.homeCardHeightRegular,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -568,7 +568,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     if (subtitle != null) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: AppMetrics.px2),
                       Text(
                         subtitle,
                         style: AppTypography.caption.copyWith(
@@ -624,10 +624,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: _cover(song.imageUrl),
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: AppMetrics.px6),
                         Text(
                           song.title,
-                          maxLines: 1,
+                          maxLines: AppLayout.singleLineText,
                           overflow: TextOverflow.ellipsis,
                           style: AppTypography.label2.copyWith(
                             color: AppColors.neutral0,
@@ -635,7 +635,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         Text(
                           song.artist,
-                          maxLines: 1,
+                          maxLines: AppLayout.singleLineText,
                           overflow: TextOverflow.ellipsis,
                           style: AppTypography.caption.copyWith(
                             color: AppColors.neutral300,
@@ -683,9 +683,9 @@ class _HomeScreenState extends State<HomeScreen> {
           'Your favorite artist',
           style: AppTypography.subtitle2.copyWith(color: AppColors.neutral0),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppMetrics.px16),
         SizedBox(
-          height: 104,
+          height: AppMetrics.px104,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: artists.length,
@@ -711,38 +711,38 @@ class _HomeScreenState extends State<HomeScreen> {
               }
               final artistImageUrl = representative?.artistImageUrl ?? '';
               return SizedBox(
-                width: 88,
+                width: AppMetrics.px88,
                 child: Column(
                   children: [
                     CircleAvatar(
-                      radius: 32,
+                      radius: AppRadius.radius600,
                       backgroundColor: AppColors.neutral700,
                       child: artistImageUrl.isEmpty
                           ? const Icon(
                               Icons.person,
                               color: AppColors.neutral300,
-                              size: 32,
+                              size: AppMetrics.px32,
                             )
                           : ClipOval(
                               child: Image.network(
                                 artistImageUrl,
-                                width: 64,
-                                height: 64,
+                                width: AppMetrics.px64,
+                                height: AppMetrics.px64,
                                 fit: BoxFit.cover,
                                 webHtmlElementStrategy:
                                     WebHtmlElementStrategy.fallback,
                                 errorBuilder: (_, _, _) => const Icon(
                                   Icons.person,
                                   color: AppColors.neutral300,
-                                  size: 32,
+                                  size: AppMetrics.px32,
                                 ),
                               ),
                             ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: AppMetrics.px6),
                     Text(
                       artistName,
-                      maxLines: 1,
+                      maxLines: AppLayout.singleLineText,
                       overflow: TextOverflow.ellipsis,
                       style: AppTypography.caption.copyWith(
                         color: AppColors.neutral300,
@@ -906,14 +906,14 @@ class _HomeScreenState extends State<HomeScreen> {
     child: Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.spacing16, AppSpacing.spacing4, AppSpacing.spacing16, AppSpacing.spacing0),
           child: SizedBox(
-            height: 48,
+            height: AppMetrics.px48,
             child: Row(
               children: [
                 SizedBox(
-                  width: 40,
-                  height: 40,
+                  width: AppMetrics.px40,
+                  height: AppMetrics.px40,
                   child: Image.asset('assets/images/logo.png'),
                 ),
                 const Spacer(),
@@ -922,7 +922,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   colors,
                   backgroundColor: _moodIconBackground(),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppMetrics.px8),
                 _roundAction(
                   Icons.person_outline,
                   colors,
@@ -933,10 +933,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         SizedBox(
-          height: 56,
+          height: AppMetrics.px56,
           width: double.infinity,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing16),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -992,26 +992,26 @@ class _HomeScreenState extends State<HomeScreen> {
               );
               return Column(
                 children: [
-                  const SizedBox(height: 14),
+                  const SizedBox(height: AppMetrics.px14),
                   SizedBox(
-                    height: 54,
+                    height: AppMetrics.px54,
                     child: ListView(
                       scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing16),
                       children: [...genres.map(_genreChip)],
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: AppMetrics.px14),
                   Center(
                     child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 40),
+                      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing40),
                       decoration: BoxDecoration(
                         color: _selectedMood == 'Echo'
                             ? AppColors.echo700
                             : _selectedMood == 'Pulse'
                             ? AppColors.pulse700
                             : AppColors.bloom700,
-                        borderRadius: BorderRadius.circular(32),
+                        borderRadius: BorderRadius.circular(AppRadius.radius600),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -1021,28 +1021,28 @@ class _HomeScreenState extends State<HomeScreen> {
                             onTap: () => setState(() => _selectedMood = m),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 13,
+                                horizontal: AppSpacing.spacing20,
+                                vertical: AppSpacing.spacing13,
                               ),
                               decoration: BoxDecoration(
                                 color: selected
                                     ? AppColors.actionPrimaryDefault
                                     : AppColors.transparent,
-                                borderRadius: BorderRadius.circular(30),
+                                borderRadius: BorderRadius.circular(AppRadius.radius30),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   if (selected) ...[
                                     Container(
-                                      width: 10,
-                                      height: 10,
+                                      width: AppMetrics.px10,
+                                      height: AppMetrics.px10,
                                       decoration: const BoxDecoration(
                                         color: AppColors.neutral0,
                                         shape: BoxShape.circle,
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
+                                    const SizedBox(width: AppMetrics.px8),
                                   ],
                                   Text(
                                     m,
@@ -1050,7 +1050,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       color: selected
                                           ? AppColors.neutral0
                                           : AppColors.neutral200,
-                                      fontSize: 16,
+                                      fontSize: AppFontSize.body,
                                       fontWeight: selected
                                           ? FontWeight.w700
                                           : FontWeight.w400,
@@ -1064,7 +1064,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: AppMetrics.px28),
                   Expanded(
                     child: ScrollConfiguration(
                       behavior: const MaterialScrollBehavior().copyWith(
@@ -1074,11 +1074,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         primary: false,
                         physics: const ClampingScrollPhysics(),
                         clipBehavior: Clip.hardEdge,
-                        padding: const EdgeInsets.fromLTRB(0, 0, 0, 22),
+                        padding: const EdgeInsets.fromLTRB(AppSpacing.spacing0, AppSpacing.spacing0, AppSpacing.spacing0, AppSpacing.spacing22),
                         children: sections.isEmpty
                             ? [
                                 Padding(
-                                  padding: const EdgeInsets.all(24),
+                                  padding: const EdgeInsets.all(AppSpacing.spacing24),
                                   child: Text(
                                     'No songs in this season yet',
                                     style: AppTypography.body2.copyWith(
@@ -1096,7 +1096,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     sections[i].$3,
                                   ),
                                   if (i != sections.length - 1)
-                                    const SizedBox(height: 32),
+                                    const SizedBox(height: AppMetrics.px32),
                                 ],
                               ],
                       ),
@@ -1244,25 +1244,25 @@ class _HomeScreenState extends State<HomeScreen> {
         ? AppColors.bloom700
         : AppColors.echo700;
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.only(right: AppSpacing.spacing8),
       child: Align(
         alignment: Alignment.center,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing14, vertical: AppSpacing.spacing6),
           decoration: BoxDecoration(
             color: selected
                 ? AppColors.actionPrimaryDefault
                 : AppColors.transparent,
-            border: selected ? null : Border.all(color: outlineColor, width: 1),
-            borderRadius: BorderRadius.circular(100),
+            border: selected ? null : Border.all(color: outlineColor, width: AppMetrics.px1),
+            borderRadius: BorderRadius.circular(AppRadius.radiusPill),
           ),
           child: Text(
             label,
             style: const TextStyle(
               color: AppColors.neutral0,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.25,
+              fontSize: AppFontSize.bodySmall,
+              fontWeight: AppFontWeight.semiBold,
+              letterSpacing: AppLetterSpacing.body,
             ),
           ),
         ),
@@ -1281,7 +1281,7 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 16, right: 16),
+            padding: const EdgeInsets.only(left: AppSpacing.spacing16, right: AppSpacing.spacing16),
             child: Row(
               children: [
                 Expanded(
@@ -1292,14 +1292,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         title,
                         style: AppTypography.subtitle2.copyWith(
                           color: AppColors.neutral0,
-                          fontSize: 22,
+                          fontSize: AppFontSize.titleLarge,
                         ),
                       ),
                       Text(
                         subtitle,
                         style: AppTypography.caption.copyWith(
                           color: AppColors.neutral100,
-                          fontSize: 15,
+                          fontSize: AppFontSize.bodyCompact,
                         ),
                       ),
                     ],
@@ -1309,15 +1309,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   'See all',
                   style: AppTypography.caption.copyWith(
                     color: AppColors.neutral0,
-                    fontSize: 15,
+                    fontSize: AppFontSize.bodyCompact,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: AppMetrics.px18),
           SizedBox(
-            height: 148,
+            height: AppMetrics.px148,
             child: ListView.builder(
               primary: false,
               scrollDirection: Axis.horizontal,
@@ -1334,27 +1334,27 @@ class _HomeScreenState extends State<HomeScreen> {
                 final song = songs[index];
                 return SizedBox(
                   key: ValueKey(song.id),
-                  width: 132,
-                  height: 148,
+                  width: AppMetrics.px132,
+                  height: AppMetrics.px148,
                   child: GestureDetector(
                     onTap: () => _openPlayer(context, song),
                     child: Padding(
-                      padding: const EdgeInsets.only(left: 16),
+                      padding: const EdgeInsets.only(left: AppSpacing.spacing16),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(AppRadius.radius200),
                             child: SizedBox.square(
-                              dimension: 104,
+                              dimension: AppMetrics.px104,
                               child: _cover(song.imageUrl),
                             ),
                           ),
-                          const SizedBox(height: 5),
+                          const SizedBox(height: AppMetrics.px5),
                           Text(
                             song.title,
-                            maxLines: 1,
+                            maxLines: AppLayout.singleLineText,
                             overflow: TextOverflow.ellipsis,
                             style: AppTypography.label2.copyWith(
                               color: AppColors.neutral0,
@@ -1362,7 +1362,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           Text(
                             song.artist,
-                            maxLines: 1,
+                            maxLines: AppLayout.singleLineText,
                             overflow: TextOverflow.ellipsis,
                             style: AppTypography.caption.copyWith(
                               color: AppColors.neutral0,
@@ -1387,10 +1387,10 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, playerSnapshot) {
         final isPlaying = playerSnapshot.data?.playing ?? false;
         return Padding(
-          padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.spacing8, AppSpacing.spacing0, AppSpacing.spacing8, AppSpacing.spacing4),
           child: Container(
-            height: 54,
-            padding: const EdgeInsets.all(6),
+            height: AppMetrics.px54,
+            padding: const EdgeInsets.all(AppSpacing.spacing6),
             decoration: BoxDecoration(
               color: AppColors.neutral700,
               borderRadius: BorderRadius.circular(AppRadius.radius300),
@@ -1404,14 +1404,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Row(
                       children: [
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(AppRadius.radius6),
                           child: SizedBox(
-                            width: 40,
-                            height: 40,
+                            width: AppMetrics.px40,
+                            height: AppMetrics.px40,
                             child: _cover(selectedSong.imageUrl),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppMetrics.px8),
                         Expanded(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -1419,7 +1419,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: [
                               Text(
                                 selectedSong.title,
-                                maxLines: 1,
+                                maxLines: AppLayout.singleLineText,
                                 overflow: TextOverflow.ellipsis,
                                 style: AppTypography.label2.copyWith(
                                   color: AppColors.neutral0,
@@ -1427,7 +1427,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               Text(
                                 selectedSong.artist,
-                                maxLines: 1,
+                                maxLines: AppLayout.singleLineText,
                                 overflow: TextOverflow.ellipsis,
                                 style: AppTypography.caption.copyWith(
                                   color: AppColors.neutral300,
@@ -1445,12 +1445,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icon(
                     isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                     color: AppColors.primary500,
-                    size: 28,
+                    size: AppMetrics.px28,
                   ),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints.tightFor(
-                    width: 36,
-                    height: 40,
+                    width: AppMetrics.px36,
+                    height: AppMetrics.px40,
                   ),
                 ),
               ],
@@ -1467,7 +1467,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 60,
+          height: AppMetrics.px60,
           child: Row(
             children: [
               _navItem('assets/icons/home.svg', 'Home', 0),
@@ -1506,19 +1506,19 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             SvgPicture.asset(
               asset,
-              width: 22,
-              height: 22,
+              width: AppMetrics.px22,
+              height: AppMetrics.px22,
               colorFilter: ColorFilter.mode(
                 selected ? AppColors.primary500 : AppColors.neutral300,
                 BlendMode.srcIn,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: AppMetrics.px2),
             Text(
               label,
               style: AppTypography.caption.copyWith(
                 color: selected ? AppColors.neutral0 : AppColors.neutral300,
-                letterSpacing: 1.1,
+                letterSpacing: AppLetterSpacing.navigation,
               ),
             ),
           ],
@@ -1593,7 +1593,7 @@ class _HomeScreenState extends State<HomeScreen> {
           );
           return SlideTransition(
             position: Tween<Offset>(
-              begin: const Offset(0, 1),
+              begin: const Offset(AppSpacing.spacing0, AppSpacing.spacing1),
               end: Offset.zero,
             ).animate(curvedAnimation),
             child: child,
@@ -1777,7 +1777,7 @@ class _SearchSheetState extends State<SearchSheet> {
         child: Column(
           children: [
             SizedBox(
-              height: 36,
+              height: AppMetrics.px36,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: widget.onClose,
@@ -1802,27 +1802,27 @@ class _SearchSheetState extends State<SearchSheet> {
                 },
                 child: Center(
                   child: Container(
-                    width: 70,
-                    height: 4,
+                    width: AppMetrics.px70,
+                    height: AppMetrics.px4,
                     decoration: BoxDecoration(
                       color: AppColors.neutral400,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(AppRadius.radius100),
                     ),
                   ),
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.spacing20, AppSpacing.spacing14, AppSpacing.spacing20, AppSpacing.spacing14),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text('Search', style: AppTypography.headline2),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing18),
               child: SizedBox(
-                height: 44,
+                height: AppMetrics.px44,
                 child: TextField(
                   controller: _controller,
                   focusNode: _focusNode,
@@ -1844,11 +1844,11 @@ class _SearchSheetState extends State<SearchSheet> {
                     filled: true,
                     fillColor: AppColors.searchField,
                     prefixIcon: Padding(
-                      padding: const EdgeInsets.all(13),
+                      padding: const EdgeInsets.all(AppSpacing.spacing13),
                       child: SvgPicture.asset(
                         'assets/icons/search.svg',
-                        width: 18,
-                        height: 18,
+                        width: AppMetrics.px18,
+                        height: AppMetrics.px18,
                       ),
                     ),
                     suffixIcon: query.isEmpty
@@ -1863,28 +1863,28 @@ class _SearchSheetState extends State<SearchSheet> {
                             },
                             icon: const Icon(
                               Icons.close_rounded,
-                              size: 16,
+                              size: AppMetrics.px16,
                               color: AppColors.neutral200,
                             ),
                             visualDensity: VisualDensity.compact,
                           ),
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
+                      horizontal: AppSpacing.spacing14,
+                      vertical: AppSpacing.spacing10,
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(28),
+                      borderRadius: BorderRadius.circular(AppRadius.radius28),
                       borderSide: BorderSide.none,
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(28),
+                      borderRadius: BorderRadius.circular(AppRadius.radius28),
                       borderSide: BorderSide.none,
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(28),
+                      borderRadius: BorderRadius.circular(AppRadius.radius28),
                       borderSide: const BorderSide(
                         color: AppColors.actionPrimaryDefault,
-                        width: 1.5,
+                        width: AppMetrics.px1_5,
                       ),
                     ),
                   ),
@@ -1915,7 +1915,7 @@ class _SearchSheetState extends State<SearchSheet> {
                     return const Center(
                       child: CircularProgressIndicator(
                         color: AppColors.primary500,
-                        strokeWidth: 2,
+                        strokeWidth: AppMetrics.px2,
                       ),
                     );
                   }
@@ -1931,7 +1931,7 @@ class _SearchSheetState extends State<SearchSheet> {
 
   Widget _searchTabs() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.spacing18, AppSpacing.spacing14, AppSpacing.spacing18, AppSpacing.spacing8),
       child: Row(
         children: _tabs.map((tab) {
           final isSelected = _selectedTab == tab;
@@ -1952,15 +1952,15 @@ class _SearchSheetState extends State<SearchSheet> {
                           : FontWeight.w400,
                     ),
                   ),
-                  const SizedBox(height: 7),
+                  const SizedBox(height: AppMetrics.px7),
                   Container(
-                    height: 2,
-                    width: 24,
+                    height: AppMetrics.px2,
+                    width: AppMetrics.px24,
                     decoration: BoxDecoration(
                       color: isSelected
                           ? AppColors.primary500
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(2),
+                          : AppColors.transparent,
+                      borderRadius: BorderRadius.circular(AppRadius.radius2),
                     ),
                   ),
                 ],
@@ -1980,7 +1980,7 @@ class _SearchSheetState extends State<SearchSheet> {
       builder: (context, snapshot) {
         final docs = snapshot.data?.docs ?? [];
         return ListView(
-          padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.spacing18, AppSpacing.spacing20, AppSpacing.spacing18, AppSpacing.spacing18),
           children: [
             Row(
               children: [
@@ -2005,13 +2005,13 @@ class _SearchSheetState extends State<SearchSheet> {
                       'Delete',
                       style: AppTypography.caption.copyWith(
                         color: AppColors.actionPrimaryDefault,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: AppFontWeight.bold,
                       ),
                     ),
                   ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppMetrics.px16),
             ...docs.map((doc) {
               final data = doc.data();
               return _recentRow(doc, data, songs);
@@ -2052,15 +2052,15 @@ class _SearchSheetState extends State<SearchSheet> {
         setState(() {});
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 7),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.spacing7),
         child: Row(
           children: [
-            _searchAvatar(imageUrl, rounded: kind == 'artist', size: 44),
-            const SizedBox(width: 12),
+            _searchAvatar(imageUrl, rounded: kind == 'artist', size: AppMetrics.px44),
+            const SizedBox(width: AppMetrics.px12),
             Expanded(
               child: Text(
                 title,
-                maxLines: 1,
+                maxLines: AppLayout.singleLineText,
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.label2.copyWith(color: AppColors.neutral0),
               ),
@@ -2069,7 +2069,7 @@ class _SearchSheetState extends State<SearchSheet> {
               onPressed: () => _deleteRecent(doc.id),
               icon: const Icon(
                 Icons.close_rounded,
-                size: 17,
+                size: AppMetrics.px17,
                 color: AppColors.neutral0,
               ),
               visualDensity: VisualDensity.compact,
@@ -2129,9 +2129,9 @@ class _SearchSheetState extends State<SearchSheet> {
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.spacing18, AppSpacing.spacing8, AppSpacing.spacing18, AppSpacing.spacing18),
       itemCount: rows.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 2),
+      separatorBuilder: (_, _) => const SizedBox(height: AppMetrics.px2),
       itemBuilder: (context, index) => rows[index],
     );
   }
@@ -2204,24 +2204,24 @@ class _SearchSheetState extends State<SearchSheet> {
     required String subtitle,
     bool rounded = false,
   }) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6),
+    padding: const EdgeInsets.symmetric(vertical: AppSpacing.spacing6),
     child: Row(
       children: [
-        _searchAvatar(imageUrl, rounded: rounded, size: 44),
-        const SizedBox(width: 12),
+        _searchAvatar(imageUrl, rounded: rounded, size: AppMetrics.px44),
+        const SizedBox(width: AppMetrics.px12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 title,
-                maxLines: 1,
+                maxLines: AppLayout.singleLineText,
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.label2.copyWith(color: AppColors.neutral0),
               ),
               Text(
                 subtitle,
-                maxLines: 1,
+                maxLines: AppLayout.singleLineText,
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.caption.copyWith(
                   color: AppColors.neutral300,
@@ -2232,7 +2232,7 @@ class _SearchSheetState extends State<SearchSheet> {
         ),
         const Icon(
           Icons.more_vert_rounded,
-          size: 19,
+          size: AppMetrics.px19,
           color: AppColors.primary500,
         ),
       ],
@@ -2244,7 +2244,7 @@ class _SearchSheetState extends State<SearchSheet> {
     required bool rounded,
     required double size,
   }) => ClipRRect(
-    borderRadius: BorderRadius.circular(rounded ? size / 2 : 6),
+    borderRadius: BorderRadius.circular(rounded ? size / 2 : AppRadius.radius6),
     child: SizedBox(
       width: size,
       height: size,
@@ -2254,7 +2254,7 @@ class _SearchSheetState extends State<SearchSheet> {
               child: Icon(
                 rounded ? Icons.person_rounded : Icons.music_note_rounded,
                 color: AppColors.neutral400,
-                size: 22,
+                size: AppMetrics.px22,
               ),
             )
           : Image.network(
@@ -2266,7 +2266,7 @@ class _SearchSheetState extends State<SearchSheet> {
                 child: Icon(
                   rounded ? Icons.person_rounded : Icons.music_note_rounded,
                   color: AppColors.neutral400,
-                  size: 22,
+                  size: AppMetrics.px22,
                 ),
               ),
             ),

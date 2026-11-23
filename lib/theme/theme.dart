@@ -1,11 +1,22 @@
 import 'package:flutter/material.dart';
 
 class AppSpacing {
+  static const double spacing0 = 0;
+  static const double spacing1 = 1;
+  static const double spacing2 = 2;
+  static const double spacing3 = 3;
   static const double spacing4 = 4;
+  static const double spacing6 = 6;
+  static const double spacing7 = 7;
   static const double spacing8 = 8;
+  static const double spacing10 = 10;
   static const double spacing12 = 12;
+  static const double spacing13 = 13;
+  static const double spacing14 = 14;
   static const double spacing16 = 16;
+  static const double spacing18 = 18;
   static const double spacing20 = 20;
+  static const double spacing22 = 22;
   static const double spacing24 = 24;
   static const double spacing28 = 28;
   static const double spacing32 = 32;
@@ -21,6 +32,119 @@ class AppSpacing {
   static const double spacing72 = 72;
 }
 
+/// Fixed component dimensions from the design system.
+/// Use these tokens for icon sizes, control heights, artwork dimensions, etc.
+class AppMetrics {
+  static const double px1 = 1;
+  static const double px1_5 = 1.5;
+  static const double px2 = 2;
+  static const double px3 = 3;
+  static const double px4 = 4;
+  static const double px5 = 5;
+  static const double px6 = 6;
+  static const double px7 = 7;
+  static const double px8 = 8;
+  static const double px10 = 10;
+  static const double px12 = 12;
+  static const double px13 = 13;
+  static const double px14 = 14;
+  static const double px16 = 16;
+  static const double px17 = 17;
+  static const double px18 = 18;
+  static const double px19 = 19;
+  static const double px20 = 20;
+  static const double px21 = 21;
+  static const double px22 = 22;
+  static const double px24 = 24;
+  static const double px26 = 26;
+  static const double px28 = 28;
+  static const double px30 = 30;
+  static const double px32 = 32;
+  static const double px33 = 33;
+  static const double px34 = 34;
+  static const double px36 = 36;
+  static const double px38 = 38;
+  static const double px40 = 40;
+  static const double px42 = 42;
+  static const double px44 = 44;
+  static const double px48 = 48;
+  static const double px50 = 50;
+  static const double px52 = 52;
+  static const double px54 = 54;
+  static const double px56 = 56;
+  static const double px60 = 60;
+  static const double px64 = 64;
+  static const double px70 = 70;
+  static const double px72 = 72;
+  static const double px88 = 88;
+  static const double px101 = 101;
+  static const double px104 = 104;
+  static const double px132 = 132;
+  static const double px140 = 140;
+  static const double px148 = 148;
+  static const double px161 = 161;
+  static const double px178 = 178;
+}
+
+class AppFontWeight {
+  static const FontWeight light = FontWeight.w300;
+  static const FontWeight regular = FontWeight.w400;
+  static const FontWeight medium = FontWeight.w500;
+  static const FontWeight semiBold = FontWeight.w600;
+  static const FontWeight bold = FontWeight.w700;
+}
+
+class AppLetterSpacing {
+  static const double tight = 0.15;
+  static const double body = 0.25;
+  static const double caption = 0.4;
+  static const double navigation = 1.1;
+  static const double overline = 1.5;
+}
+
+class AppElevation {
+  static const double level1 = 3;
+}
+
+class AppLayout {
+  static const double searchScrimOpacity = 0.62;
+  static const double searchSheetHeightFactor = 0.82;
+  static const double gradientStartStop = 0.2;
+  static const double gradientEndStop = 1;
+  static const double playlistGridAspectRatio = 0.78;
+  static const double squareAspectRatio = 1;
+  static const double playlistCoverWidthFactor = 0.48;
+  static const double playlistCoverMinWidth = 172;
+  static const double playlistCoverMaxWidth = 224;
+  static const double modalHeightFactor = 0.94;
+  static const double songPickerHeightFactor = 0.75;
+  static const double playerArtworkWidthFactor = 0.855;
+  static const double playerArtworkMaxWidth = 460;
+  static const double homeCardHeightCompact = 34;
+  static const double homeCardHeightRegular = 52;
+  static const double miniPlayerBottomInset = 64;
+  static const int twoColumnGridCount = 2;
+  static const double sliderTrackHeight = AppMetrics.px3;
+  static const double sliderThumbRadius = AppMetrics.px7;
+  static const double sliderOverlayRadius = AppMetrics.px13;
+  static const int singleLineText = 1;
+  static const int threeLineText = 3;
+}
+
+class AppFontSize {
+  static const double micro = 9;
+  static const double overline = 10;
+  static const double caption = 12;
+  static const double bodySmall = 14;
+  static const double bodyCompact = 15;
+  static const double body = 16;
+  static const double titleSmall = 18;
+  static const double title = 20;
+  static const double titleLarge = 22;
+  static const double headline = 28;
+  static const double display = 32;
+}
+
 class AppRadius {
   static const double radius50 = 0;
   static const double radius100 = 4;
@@ -29,49 +153,75 @@ class AppRadius {
   static const double radius400 = 16;
   static const double radius500 = 24;
   static const double radius600 = 32;
+  static const double radius2 = 2;
+  static const double radius6 = 6;
+  static const double radius13 = 13;
+  static const double radius18 = 18;
+  static const double radius28 = 28;
+  static const double radius30 = 30;
+  static const double radiusPill = 100;
 }
 
 class AppTypography {
+  static const String fontFamily = 'Lexend';
   //HEADLINE
   static const TextStyle headline1 = TextStyle(
-    fontSize: 32,
-    fontWeight: FontWeight.w700,
+    fontSize: AppFontSize.display,
+    fontWeight: AppFontWeight.bold,
   );
   static const TextStyle headline2 = TextStyle(
-    fontSize: 28,
-    fontWeight: FontWeight.w700,
+    fontSize: AppFontSize.headline,
+    fontWeight: AppFontWeight.bold,
   );
 
   static const TextStyle subtitle1 = TextStyle(
-    fontSize: 20,
-    fontWeight: FontWeight.w600,
+    fontSize: AppFontSize.title,
+    fontWeight: AppFontWeight.semiBold,
   );
   static const TextStyle subtitle2 = TextStyle(
-    fontSize: 18,
-    fontWeight: FontWeight.w600,
+    fontSize: AppFontSize.titleSmall,
+    fontWeight: AppFontWeight.semiBold,
   );
 
   static const TextStyle body1 = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w400,
+    fontSize: AppFontSize.body,
+    fontWeight: AppFontWeight.regular,
   );
   static const TextStyle body2 = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.w400,
+    fontSize: AppFontSize.bodySmall,
+    fontWeight: AppFontWeight.regular,
   );
 
   static const TextStyle label1 = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.w600,
+    fontSize: AppFontSize.bodySmall,
+    fontWeight: AppFontWeight.semiBold,
   );
   static const TextStyle label2 = TextStyle(
-    fontSize: 12,
-    fontWeight: FontWeight.w600,
+    fontSize: AppFontSize.caption,
+    fontWeight: AppFontWeight.semiBold,
   );
 
   static const TextStyle caption = TextStyle(
-    fontSize: 12,
-    fontWeight: FontWeight.w400,
+    fontSize: AppFontSize.caption,
+    fontWeight: AppFontWeight.regular,
+  );
+
+  static const TextStyle micro = TextStyle(
+    fontSize: AppFontSize.micro,
+    fontWeight: AppFontWeight.regular,
+  );
+  static const TextStyle overline = TextStyle(
+    fontSize: AppFontSize.overline,
+    fontWeight: AppFontWeight.light,
+    letterSpacing: AppLetterSpacing.overline,
+  );
+  static const TextStyle bodyCompact = TextStyle(
+    fontSize: AppFontSize.bodyCompact,
+    fontWeight: AppFontWeight.regular,
+  );
+  static const TextStyle titleSmall = TextStyle(
+    fontSize: AppFontSize.titleLarge,
+    fontWeight: AppFontWeight.bold,
   );
 }
 
@@ -205,6 +355,10 @@ class AppColors {
 // TEMA AUDIOMACK (FUERA de la clase AppColors)
 final ThemeData audioMack = ThemeData(
   useMaterial3: true,
+  fontFamily: AppTypography.fontFamily,
+  textTheme: ThemeData.dark().textTheme.apply(
+    fontFamily: AppTypography.fontFamily,
+  ),
   colorScheme: const ColorScheme.dark(
     // PRIMARY
     primary: AppColors.primary500,

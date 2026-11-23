@@ -373,7 +373,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final coverSize = math
-                .min((constraints.maxWidth - 36) * 0.855, 460.0)
+                .min((constraints.maxWidth - AppSpacing.spacing36) * AppLayout.playerArtworkWidthFactor, AppLayout.playerArtworkMaxWidth)
                 .toDouble();
 
             return ScrollConfiguration(
@@ -382,7 +382,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
               ),
               child: SingleChildScrollView(
                 physics: const ClampingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.spacing18, AppSpacing.spacing14, AppSpacing.spacing18, AppSpacing.spacing20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -399,7 +399,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 48),
+                    const SizedBox(height: AppMetrics.px48),
                     Center(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(
@@ -420,16 +420,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                   child: const Icon(
                                     Icons.music_note,
                                     color: AppColors.neutral300,
-                                    size: 64,
+                                    size: AppMetrics.px64,
                                   ),
                                 ),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: AppMetrics.px28),
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.spacing16),
                       child: Row(
                         children: [
                           Expanded(
@@ -438,22 +438,22 @@ class _PlayerScreenState extends State<PlayerScreen> {
                               children: [
                                 Text(
                                   _currentTrack.title,
-                                  maxLines: 1,
+                                  maxLines: AppLayout.singleLineText,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.15,
+                                    fontSize: AppFontSize.body,
+                                    fontWeight: AppFontWeight.semiBold,
+                                    letterSpacing: AppLetterSpacing.tight,
                                     color: AppColors.neutral0,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: AppMetrics.px4),
                                 Text(
                                   _currentTrack.artist,
                                   style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w300,
-                                    letterSpacing: 0.4,
+                                    fontSize: AppFontSize.caption,
+                                    fontWeight: AppFontWeight.light,
+                                    letterSpacing: AppLetterSpacing.caption,
                                     color: _mutedIconColor,
                                   ),
                                 ),
@@ -465,12 +465,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
                             child: _liked
                                 ? SvgPicture.asset(
                                     'assets/icons/player_like_circle.svg',
-                                    width: 36,
-                                    height: 36,
+                                    width: AppMetrics.px36,
+                                    height: AppMetrics.px36,
                                   )
                                 : Container(
-                                    width: 36,
-                                    height: 36,
+                                    width: AppMetrics.px36,
+                                    height: AppMetrics.px36,
                                     decoration: const BoxDecoration(
                                       color: AppColors.neutral600,
                                       shape: BoxShape.circle,
@@ -478,22 +478,22 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                     child: const Icon(
                                       Icons.favorite_border,
                                       color: AppColors.neutral0,
-                                      size: 20,
+                                      size: AppMetrics.px20,
                                     ),
                                   ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: AppMetrics.px20),
                     SliderTheme(
                       data: SliderTheme.of(context).copyWith(
-                        trackHeight: 3,
+                        trackHeight: AppLayout.sliderTrackHeight,
                         thumbShape: const RoundSliderThumbShape(
-                          enabledThumbRadius: 7,
+                          enabledThumbRadius: AppLayout.sliderThumbRadius,
                         ),
                         overlayShape: const RoundSliderOverlayShape(
-                          overlayRadius: 13,
+                          overlayRadius: AppLayout.sliderOverlayRadius,
                         ),
                       ),
                       child: Slider(
@@ -516,7 +516,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing4),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -535,14 +535,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 42),
+                    const SizedBox(height: AppMetrics.px42),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         _svgControl(
                           'assets/icons/player_shuffle.svg',
-                          width: 20,
-                          height: 20,
+                          width: AppMetrics.px20,
+                          height: AppMetrics.px20,
                           color: _shuffle
                               ? _playerAccentColor
                               : _mutedIconColor,
@@ -552,22 +552,22 @@ class _PlayerScreenState extends State<PlayerScreen> {
                             await _player.setShuffleModeEnabled(shuffle);
                           },
                         ),
-                        const SizedBox(width: 24),
+                        const SizedBox(width: AppMetrics.px24),
                         _seekButton(previous: true),
-                        const SizedBox(width: 24),
+                        const SizedBox(width: AppMetrics.px24),
                         GestureDetector(
                           onTap: _togglePlayback,
                           child: SizedBox(
-                            width: 56,
-                            height: 56,
+                            width: AppMetrics.px56,
+                            height: AppMetrics.px56,
                             child: Center(
                               child: _loading
                                   ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
+                                      width: AppMetrics.px20,
+                                      height: AppMetrics.px20,
                                       child: CircularProgressIndicator(
                                         color: _playerAccentColor,
-                                        strokeWidth: 2,
+                                        strokeWidth: AppMetrics.px2,
                                       ),
                                     )
                                   : _playing
@@ -575,18 +575,18 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                   : const Icon(
                                       Icons.play_arrow_rounded,
                                       color: _mutedIconColor,
-                                      size: 56,
+                                      size: AppMetrics.px56,
                                     ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 24),
+                        const SizedBox(width: AppMetrics.px24),
                         _seekButton(previous: false),
-                        const SizedBox(width: 24),
+                        const SizedBox(width: AppMetrics.px24),
                         _svgControl(
                           'assets/icons/player_repeat.svg',
-                          width: 22,
-                          height: 22,
+                          width: AppMetrics.px22,
+                          height: AppMetrics.px22,
                           color: _repeat ? _playerAccentColor : _mutedIconColor,
                           onTap: () async {
                             final repeat = !_repeat;
@@ -598,9 +598,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 56),
+                    const SizedBox(height: AppMetrics.px56),
                     _actionMenu(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppMetrics.px16),
                   ],
                 ),
               ),
@@ -620,7 +620,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   Widget _actionMenu() {
     return SizedBox(
-      height: 52,
+      height: AppMetrics.px52,
       child: Row(
         children: [
           _actionItem('assets/icons/player_add.svg', 'Add', 18, 18),
@@ -648,13 +648,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 BlendMode.srcIn,
               ),
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: AppMetrics.px5),
             Text(
               label,
               style: const TextStyle(
                 color: _mutedIconColor,
-                fontSize: 9,
-                fontWeight: FontWeight.w400,
+                fontSize: AppFontSize.micro,
+                fontWeight: AppFontWeight.regular,
               ),
             ),
           ],
@@ -665,7 +665,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   Widget _bottomNavigationBar(BuildContext context) {
     return Container(
-      height: 60,
+      height: AppMetrics.px60,
       color: AppColors.neutral900,
       child: Row(
         children: [
@@ -717,18 +717,18 @@ class _PlayerScreenState extends State<PlayerScreen> {
           children: [
             SvgPicture.asset(
               asset,
-              width: 21,
-              height: 21,
+              width: AppMetrics.px21,
+              height: AppMetrics.px21,
               colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppMetrics.px4),
             Text(
               label,
               style: TextStyle(
                 color: color,
-                fontSize: 10,
-                fontWeight: FontWeight.w300,
-                letterSpacing: 1.5,
+                fontSize: AppFontSize.overline,
+                fontWeight: AppFontWeight.light,
+                letterSpacing: AppLetterSpacing.overline,
               ),
             ),
           ],
@@ -740,31 +740,31 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Widget _circleButton(String asset, VoidCallback onPressed) {
     return GestureDetector(
       onTap: onPressed,
-      child: SvgPicture.asset(asset, width: 36, height: 36),
+      child: SvgPicture.asset(asset, width: AppMetrics.px36, height: AppMetrics.px36),
     );
   }
 
   Widget _pauseIcon() {
     return SizedBox(
-      width: 33,
-      height: 40,
+      width: AppMetrics.px33,
+      height: AppMetrics.px40,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Container(
-            width: 14,
-            height: 40,
+            width: AppMetrics.px14,
+            height: AppMetrics.px40,
             decoration: BoxDecoration(
               color: _playerAccentColor,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppRadius.radius100),
             ),
           ),
           Container(
-            width: 14,
-            height: 40,
+            width: AppMetrics.px14,
+            height: AppMetrics.px40,
             decoration: BoxDecoration(
               color: _playerAccentColor,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppRadius.radius100),
             ),
           ),
         ],
@@ -786,15 +786,15 @@ class _PlayerScreenState extends State<PlayerScreen> {
         }
       },
       child: SizedBox(
-        width: 28,
-        height: 24,
+        width: AppMetrics.px28,
+        height: AppMetrics.px24,
         child: Center(
           child: Transform.flip(
             flipX: previous,
             child: SvgPicture.asset(
               'assets/icons/player_seek.svg',
-              width: 28,
-              height: 21,
+              width: AppMetrics.px28,
+              height: AppMetrics.px21,
               colorFilter: const ColorFilter.mode(
                 _mutedIconColor,
                 BlendMode.srcIn,
@@ -817,7 +817,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
       onTap: onTap,
       child: SizedBox(
         width: width,
-        height: 24,
+        height: AppMetrics.px24,
         child: Center(
           child: SvgPicture.asset(
             asset,

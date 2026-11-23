@@ -75,9 +75,9 @@ class _PlaylistsViewState extends State<PlaylistsView> {
             child: Column(
               children: [
                 _header(),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppMetrics.px20),
                 _tabs(),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppMetrics.px24),
                 Expanded(
                   child: ScrollConfiguration(
                     behavior: const MaterialScrollBehavior().copyWith(
@@ -98,11 +98,10 @@ class _PlaylistsViewState extends State<PlaylistsView> {
           content,
           if (_selectedTab == 2 && _openedPlaylist == null)
             Positioned(
-              right: 16,
-              bottom:
-                  60 +
+              right: AppSpacing.spacing16,
+              bottom: AppSpacing.spacing60 +
                   MediaQuery.viewPaddingOf(context).bottom +
-                  (widget.hasMiniPlayer ? 64 : 0) +
+                  (widget.hasMiniPlayer ? AppLayout.miniPlayerBottomInset : AppSpacing.spacing0) +
                   40,
               child: _createMenu(),
             ),
@@ -129,14 +128,14 @@ class _PlaylistsViewState extends State<PlaylistsView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.spacing16, AppSpacing.spacing4, AppSpacing.spacing16, AppSpacing.spacing0),
           child: SizedBox(
-            height: 48,
+            height: AppMetrics.px48,
             child: Row(
               children: [
                 SizedBox(
-                  width: 40,
-                  height: 40,
+                  width: AppMetrics.px40,
+                  height: AppMetrics.px40,
                   child: Image.asset(
                     'assets/images/logo.png',
                     fit: BoxFit.contain,
@@ -144,22 +143,22 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                 ),
                 const Spacer(),
                 _headerAction(Icons.notifications_none),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppMetrics.px8),
                 _headerAction(Icons.person_outline),
               ],
             ),
           ),
         ),
         SizedBox(
-          height: 56,
+          height: AppMetrics.px56,
           width: double.infinity,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing16),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 'My Library',
-                maxLines: 1,
+                maxLines: AppLayout.singleLineText,
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.headline1.copyWith(
                   color: AppColors.neutral0,
@@ -177,13 +176,13 @@ class _PlaylistsViewState extends State<PlaylistsView> {
       clipBehavior: Clip.none,
       children: [
         Container(
-          width: 38,
-          height: 38,
+          width: AppMetrics.px38,
+          height: AppMetrics.px38,
           decoration: const BoxDecoration(
             color: AppColors.neutral700,
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: AppColors.neutral200, size: 20),
+          child: Icon(icon, color: AppColors.neutral200, size: AppMetrics.px20),
         ),
       ],
     );
@@ -192,7 +191,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
   Widget _tabs() {
     const labels = ['Songs', 'Artists', 'Playlists'];
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing16),
       child: Row(
         children: List.generate(labels.length, (index) {
           final selected = _selectedTab == index;
@@ -215,15 +214,15 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppMetrics.px8),
                   Container(
-                    height: 4,
-                    width: 56,
+                    height: AppMetrics.px4,
+                    width: AppMetrics.px56,
                     decoration: BoxDecoration(
                       color: selected
                           ? AppColors.primary500
                           : AppColors.transparent,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.radius200),
                     ),
                   ),
                 ],
@@ -261,13 +260,13 @@ class _PlaylistsViewState extends State<PlaylistsView> {
             return _message('No liked songs yet');
           }
           return GridView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.spacing16, AppSpacing.spacing8, AppSpacing.spacing16, AppSpacing.spacing24),
             itemCount: songs.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 20,
-              childAspectRatio: 0.78,
+              crossAxisCount: AppLayout.twoColumnGridCount,
+              crossAxisSpacing: AppSpacing.spacing16,
+              mainAxisSpacing: AppSpacing.spacing20,
+              childAspectRatio: AppLayout.playlistGridAspectRatio,
             ),
             itemBuilder: (context, index) {
               final song = songs[index];
@@ -308,13 +307,13 @@ class _PlaylistsViewState extends State<PlaylistsView> {
       if (!snapshot.hasData) return _loading();
       final playlists = snapshot.data!.docs;
       return GridView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.spacing16, AppSpacing.spacing8, AppSpacing.spacing16, AppSpacing.spacing24),
         itemCount: playlists.isEmpty ? 1 : playlists.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 24,
-          childAspectRatio: 0.78,
+          crossAxisCount: AppLayout.twoColumnGridCount,
+          crossAxisSpacing: AppSpacing.spacing16,
+          mainAxisSpacing: AppSpacing.spacing24,
+          childAspectRatio: AppLayout.playlistGridAspectRatio,
         ),
         itemBuilder: (context, index) {
           if (playlists.isEmpty) {
@@ -324,7 +323,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AspectRatio(
-                    aspectRatio: 1,
+                    aspectRatio: AppLayout.squareAspectRatio,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(AppRadius.radius300),
                       child: Container(
@@ -333,13 +332,13 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                           child: Icon(
                             Icons.queue_music_rounded,
                             color: AppColors.neutral400,
-                            size: 72,
+                            size: AppMetrics.px72,
                           ),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppMetrics.px8),
                   Text(
                     'My playlist',
                     style: AppTypography.label1.copyWith(
@@ -385,9 +384,9 @@ class _PlaylistsViewState extends State<PlaylistsView> {
       child: Stack(
         children: [
           Positioned(
-            top: 12,
-            left: 20,
-            right: 20,
+            top: AppSpacing.spacing12,
+            left: AppSpacing.spacing20,
+            right: AppSpacing.spacing20,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -401,7 +400,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                       Icons.edit_rounded,
                       () => _openPlaylistForm(playlist: playlist),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: AppMetrics.px16),
                     _detailAction(
                       Icons.share_rounded,
                       () => _notAvailable('Compartir playlist'),
@@ -412,7 +411,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
             ),
           ),
           Positioned.fill(
-            top: 68,
+            top: AppSpacing.spacing68,
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
               stream: FirebaseFirestore.instance
                   .collection('canciones')
@@ -473,8 +472,8 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                   }
                 }
 
-                final coverSize = (MediaQuery.sizeOf(context).width * 0.48)
-                    .clamp(172.0, 224.0)
+                final coverSize = (MediaQuery.sizeOf(context).width * AppLayout.playlistCoverWidthFactor)
+                    .clamp(AppLayout.playlistCoverMinWidth, AppLayout.playlistCoverMaxWidth)
                     .toDouble();
 
                 return ScrollConfiguration(
@@ -484,7 +483,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                   child: ListView(
                     physics: const ClampingScrollPhysics(),
                     clipBehavior: Clip.hardEdge,
-                    padding: const EdgeInsets.fromLTRB(20, 36, 20, 20),
+                    padding: const EdgeInsets.fromLTRB(AppSpacing.spacing20, AppSpacing.spacing36, AppSpacing.spacing20, AppSpacing.spacing20),
                     children: [
                       Center(
                         child: ClipRRect(
@@ -504,7 +503,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: AppMetrics.px18),
                       Text(
                         title,
                         textAlign: TextAlign.center,
@@ -512,16 +511,16 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                           color: AppColors.neutral0,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppMetrics.px4),
                       Text(
                         'Created by me',
                         textAlign: TextAlign.center,
                         style: AppTypography.body1.copyWith(
                           color: AppColors.neutral300,
-                          fontWeight: FontWeight.w400,
+                          fontWeight: AppFontWeight.regular,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppMetrics.px8),
                       Text(
                         '${songs.length} songs',
                         textAlign: TextAlign.center,
@@ -529,7 +528,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                           color: AppColors.neutral300,
                         ),
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: AppMetrics.px18),
                       Row(
                         children: [
                           _roundPlaylistControl(
@@ -538,10 +537,10 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                                 ? null
                                 : () => playFromPlaylist(songs.last),
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: AppMetrics.px16),
                           Expanded(
                             child: SizedBox(
-                              height: 52,
+                              height: AppMetrics.px52,
                               child: FilledButton.icon(
                                 style: FilledButton.styleFrom(
                                   backgroundColor: AppColors.primary500,
@@ -553,29 +552,29 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                                     : () => playFromPlaylist(songs.first),
                                 icon: const Icon(
                                   Icons.play_arrow_rounded,
-                                  size: 26,
+                                  size: AppMetrics.px26,
                                 ),
                                 label: Text(
                                   'Play',
                                   style: AppTypography.subtitle2.copyWith(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w700,
+                                    fontSize: AppFontSize.title,
+                                    fontWeight: AppFontWeight.bold,
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: AppMetrics.px16),
                           _roundPlaylistControl(
                             icon: Icons.download_rounded,
                             onPressed: () => _notAvailable('Descarga'),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: AppMetrics.px18),
                       if (songs.isEmpty)
                         Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 24),
+                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.spacing24),
                           child: _message(
                             'Esta playlist todavía no tiene canciones',
                           ),
@@ -610,7 +609,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                             );
                           },
                           child: SizedBox(
-                            height: 72,
+                            height: AppMetrics.px72,
                             child: Row(
                               children: [
                                 ClipRRect(
@@ -618,12 +617,12 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                                     AppRadius.radius200,
                                   ),
                                   child: SizedBox(
-                                    width: 56,
-                                    height: 56,
+                                    width: AppMetrics.px56,
+                                    height: AppMetrics.px56,
                                     child: _cover(songImage),
                                   ),
                                 ),
-                                const SizedBox(width: 16),
+                                const SizedBox(width: AppMetrics.px16),
                                 Expanded(
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -632,7 +631,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                                     children: [
                                       Text(
                                         songTitle,
-                                        maxLines: 1,
+                                        maxLines: AppLayout.singleLineText,
                                         overflow: TextOverflow.ellipsis,
                                         style: AppTypography.label1.copyWith(
                                           color: AppColors.neutral0,
@@ -640,7 +639,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                                       ),
                                       Text(
                                         songArtist,
-                                        maxLines: 1,
+                                        maxLines: AppLayout.singleLineText,
                                         overflow: TextOverflow.ellipsis,
                                         style: AppTypography.body2.copyWith(
                                           color: AppColors.neutral300,
@@ -652,7 +651,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                                 const Icon(
                                   Icons.more_vert_rounded,
                                   color: AppColors.primary500,
-                                  size: 24,
+                                  size: AppMetrics.px24,
                                 ),
                               ],
                             ),
@@ -677,9 +676,9 @@ class _PlaylistsViewState extends State<PlaylistsView> {
       customBorder: const CircleBorder(),
       onTap: onPressed,
       child: SizedBox(
-        width: 44,
-        height: 44,
-        child: Icon(icon, color: AppColors.neutral100, size: 24),
+        width: AppMetrics.px44,
+        height: AppMetrics.px44,
+        child: Icon(icon, color: AppColors.neutral100, size: AppMetrics.px24),
       ),
     ),
   );
@@ -694,14 +693,14 @@ class _PlaylistsViewState extends State<PlaylistsView> {
       customBorder: const CircleBorder(),
       onTap: onPressed,
       child: SizedBox(
-        width: 50,
-        height: 50,
+        width: AppMetrics.px50,
+        height: AppMetrics.px50,
         child: Icon(
           icon,
           color: onPressed == null
               ? AppColors.neutral500
               : AppColors.neutral100,
-          size: 24,
+          size: AppMetrics.px24,
         ),
       ),
     ),
@@ -720,7 +719,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
             _openPlaylistForm();
           },
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: AppMetrics.px10),
         _createOption(
           label: 'Create Folder',
           icon: Icons.create_new_folder_rounded,
@@ -735,7 +734,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
             );
           },
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppMetrics.px12),
       ],
       FloatingActionButton(
         heroTag: 'library-create-fab',
@@ -746,7 +745,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
             setState(() => _showCreateOptions = !_showCreateOptions),
         child: Icon(
           _showCreateOptions ? Icons.close_rounded : Icons.add,
-          size: 34,
+          size: AppMetrics.px34,
         ),
       ),
     ],
@@ -758,12 +757,12 @@ class _PlaylistsViewState extends State<PlaylistsView> {
     required VoidCallback onTap,
   }) => Material(
     color: AppColors.neutral700,
-    borderRadius: BorderRadius.circular(32),
+    borderRadius: BorderRadius.circular(AppRadius.radius600),
     child: InkWell(
-      borderRadius: BorderRadius.circular(32),
+      borderRadius: BorderRadius.circular(AppRadius.radius600),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 13, 18, 13),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.spacing20, AppSpacing.spacing13, AppSpacing.spacing18, AppSpacing.spacing13),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -771,8 +770,8 @@ class _PlaylistsViewState extends State<PlaylistsView> {
               label,
               style: AppTypography.body1.copyWith(color: AppColors.neutral0),
             ),
-            const SizedBox(width: 16),
-            Icon(icon, color: AppColors.neutral0, size: 24),
+            const SizedBox(width: AppMetrics.px16),
+            Icon(icon, color: AppColors.neutral0, size: AppMetrics.px24),
           ],
         ),
       ),
@@ -780,7 +779,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
   );
 
   Widget _miniPlayer() {
-    if (widget.audioPlayer == null) return const SizedBox(height: 8);
+    if (widget.audioPlayer == null) return const SizedBox(height: AppMetrics.px8);
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance.collection('canciones').snapshots(),
       builder: (context, snapshot) {
@@ -814,20 +813,20 @@ class _PlaylistsViewState extends State<PlaylistsView> {
           }
         }
         final title = (song?['title'] ?? song?['titulo'] ?? '').toString();
-        if (title.isEmpty) return const SizedBox(height: 8);
+        if (title.isEmpty) return const SizedBox(height: AppMetrics.px8);
         final artist = (song?['artist'] ?? song?['subtitulo'] ?? '').toString();
         final imageUrl = (song?['imageUrl'] ?? '').toString();
         final audioUrl = songAudioValue(song!);
         final player = widget.audioPlayer!;
         return Padding(
-          padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.spacing8, AppSpacing.spacing0, AppSpacing.spacing8, AppSpacing.spacing4),
           child: Material(
             color: AppColors.neutral700,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AppRadius.radius18),
             child: SizedBox(
-              height: 54,
+              height: AppMetrics.px54,
               child: Padding(
-                padding: const EdgeInsets.all(6),
+                padding: const EdgeInsets.all(AppSpacing.spacing6),
                 child: Row(
                   children: [
                     Expanded(
@@ -843,14 +842,14 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                         child: Row(
                           children: [
                             ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(AppRadius.radius200),
                               child: SizedBox(
-                                width: 40,
-                                height: 40,
+                                width: AppMetrics.px40,
+                                height: AppMetrics.px40,
                                 child: _cover(imageUrl),
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: AppMetrics.px8),
                             Expanded(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -858,7 +857,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                                 children: [
                                   Text(
                                     title,
-                                    maxLines: 1,
+                                    maxLines: AppLayout.singleLineText,
                                     overflow: TextOverflow.ellipsis,
                                     style: AppTypography.label2.copyWith(
                                       color: AppColors.neutral0,
@@ -866,7 +865,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                                   ),
                                   Text(
                                     artist,
-                                    maxLines: 1,
+                                    maxLines: AppLayout.singleLineText,
                                     overflow: TextOverflow.ellipsis,
                                     style: AppTypography.caption.copyWith(
                                       color: AppColors.neutral300,
@@ -933,7 +932,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                               ? Icons.pause_rounded
                               : Icons.play_arrow_rounded,
                           color: AppColors.primary500,
-                          size: 30,
+                          size: AppMetrics.px30,
                         ),
                       ),
                     ),
@@ -952,7 +951,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
     child: SafeArea(
       top: false,
       child: SizedBox(
-        height: 60,
+        height: AppMetrics.px60,
         child: Row(
           children: [
             _navItem(
@@ -993,19 +992,19 @@ class _PlaylistsViewState extends State<PlaylistsView> {
         children: [
           SvgPicture.asset(
             asset,
-            width: 21,
-            height: 21,
+            width: AppMetrics.px21,
+            height: AppMetrics.px21,
             colorFilter: ColorFilter.mode(
               selected ? AppColors.primary500 : AppColors.neutral200,
               BlendMode.srcIn,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: AppMetrics.px2),
           Text(
             label,
             style: AppTypography.caption.copyWith(
               color: selected ? AppColors.neutral0 : AppColors.neutral300,
-              letterSpacing: 1.1,
+              letterSpacing: AppLetterSpacing.navigation,
             ),
           ),
         ],
@@ -1059,7 +1058,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
         ),
       ),
       builder: (_) => FractionallySizedBox(
-        heightFactor: 0.94,
+        heightFactor: AppLayout.modalHeightFactor,
         child: _PlaylistFormSheet(
           playlistId: playlist?.id,
           initialData: playlist?.data(),
@@ -1163,7 +1162,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
           );
           return SlideTransition(
             position: Tween<Offset>(
-              begin: const Offset(0, 1),
+              begin: const Offset(AppSpacing.spacing0, AppSpacing.spacing1),
               end: Offset.zero,
             ).animate(curvedAnimation),
             child: child,
@@ -1196,7 +1195,7 @@ class _LibraryCard extends StatelessWidget {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       AspectRatio(
-        aspectRatio: 1,
+        aspectRatio: AppLayout.squareAspectRatio,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.radius300),
           child: SizedBox.expand(
@@ -1207,7 +1206,7 @@ class _LibraryCard extends StatelessWidget {
                       child: Icon(
                         Icons.music_note_rounded,
                         color: AppColors.neutral400,
-                        size: 48,
+                        size: AppMetrics.px48,
                       ),
                     ),
                   )
@@ -1220,24 +1219,24 @@ class _LibraryCard extends StatelessWidget {
                       child: const Icon(
                         Icons.music_note_rounded,
                         color: AppColors.neutral400,
-                        size: 48,
+                        size: AppMetrics.px48,
                       ),
                     ),
                   ),
           ),
         ),
       ),
-      const SizedBox(height: 8),
+      const SizedBox(height: AppMetrics.px8),
       Text(
         title,
-        maxLines: 1,
+        maxLines: AppLayout.singleLineText,
         overflow: TextOverflow.ellipsis,
         style: AppTypography.label1.copyWith(color: AppColors.neutral0),
       ),
-      const SizedBox(height: 2),
+      const SizedBox(height: AppMetrics.px2),
       Text(
         subtitle,
-        maxLines: 1,
+        maxLines: AppLayout.singleLineText,
         overflow: TextOverflow.ellipsis,
         style: AppTypography.caption.copyWith(color: AppColors.neutral300),
       ),
@@ -1454,33 +1453,33 @@ class _PlaylistFormSheetState extends State<_PlaylistFormSheet> {
       color: AppColors.neutral800,
       child: Column(
         children: [
-          const SizedBox(height: 16),
+          const SizedBox(height: AppMetrics.px16),
           Container(
-            width: 101,
-            height: 4,
+            width: AppMetrics.px101,
+            height: AppMetrics.px4,
             decoration: BoxDecoration(
               color: AppColors.neutral500,
               borderRadius: BorderRadius.circular(AppRadius.radius300),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.spacing20, AppSpacing.spacing12, AppSpacing.spacing20, AppSpacing.spacing12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const SizedBox(width: 24),
+                const SizedBox(width: AppMetrics.px24),
                 Text(
                   _editing ? 'Edit playlist' : 'New playlist',
                   style: AppTypography.body1.copyWith(
                     color: AppColors.neutral0,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeight.semiBold,
                   ),
                 ),
                 GestureDetector(
                   onTap: _saving ? null : () => Navigator.pop(context),
                   child: Container(
-                    width: 28,
-                    height: 28,
+                    width: AppMetrics.px28,
+                    height: AppMetrics.px28,
                     decoration: const BoxDecoration(
                       color: AppColors.neutral700,
                       shape: BoxShape.circle,
@@ -1488,7 +1487,7 @@ class _PlaylistFormSheetState extends State<_PlaylistFormSheet> {
                     child: const Icon(
                       Icons.close,
                       color: AppColors.neutral0,
-                      size: 19,
+                      size: AppMetrics.px19,
                     ),
                   ),
                 ),
@@ -1499,7 +1498,7 @@ class _PlaylistFormSheetState extends State<_PlaylistFormSheet> {
             child: Form(
               key: _formKey,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.spacing20, AppSpacing.spacing8, AppSpacing.spacing20, AppSpacing.spacing16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -1513,8 +1512,8 @@ class _PlaylistFormSheetState extends State<_PlaylistFormSheet> {
                                 AppRadius.radius300,
                               ),
                               child: Container(
-                                width: 140,
-                                height: 140,
+                                width: AppMetrics.px140,
+                                height: AppMetrics.px140,
                                 decoration: BoxDecoration(
                                   color: AppColors.neutral700,
                                   border: Border.all(
@@ -1546,7 +1545,7 @@ class _PlaylistFormSheetState extends State<_PlaylistFormSheet> {
                                                           .add_photo_alternate_outlined,
                                                       color:
                                                           AppColors.neutral300,
-                                                      size: 32,
+                                                      size: AppMetrics.px32,
                                                     ),
                                                   ),
                                             )
@@ -1555,13 +1554,13 @@ class _PlaylistFormSheetState extends State<_PlaylistFormSheet> {
                                                 Icons
                                                     .add_photo_alternate_outlined,
                                                 color: AppColors.neutral300,
-                                                size: 32,
+                                                size: AppMetrics.px32,
                                               ),
                                             )),
                               ),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppMetrics.px8),
                           TextButton(
                             onPressed: _saving ? null : _pickCover,
                             child: Text(
@@ -1580,7 +1579,7 @@ class _PlaylistFormSheetState extends State<_PlaylistFormSheet> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppMetrics.px12),
                     _fieldLabel('Name'),
                     TextFormField(
                       controller: _nameController,
@@ -1594,18 +1593,18 @@ class _PlaylistFormSheetState extends State<_PlaylistFormSheet> {
                           ? 'Enter a playlist name'
                           : null,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppMetrics.px8),
                     _fieldLabel('Description'),
                     TextFormField(
                       controller: _descriptionController,
-                      maxLines: 3,
+                      maxLines: AppLayout.threeLineText,
                       maxLength: 120,
                       style: AppTypography.body2.copyWith(
                         color: AppColors.neutral0,
                       ),
                       decoration: _inputDecoration('Add a description'),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppMetrics.px8),
                     Row(
                       children: [
                         Expanded(
@@ -1633,22 +1632,22 @@ class _PlaylistFormSheetState extends State<_PlaylistFormSheet> {
                               : () => setState(() => _private = !_private),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 150),
-                            width: 44,
-                            height: 26,
-                            padding: const EdgeInsets.all(3),
+                            width: AppMetrics.px44,
+                            height: AppMetrics.px26,
+                            padding: const EdgeInsets.all(AppSpacing.spacing3),
                             decoration: BoxDecoration(
                               color: _private
                                   ? AppColors.primary500
                                   : AppColors.neutral600,
-                              borderRadius: BorderRadius.circular(13),
+                              borderRadius: BorderRadius.circular(AppRadius.radius13),
                             ),
                             child: Align(
                               alignment: _private
                                   ? Alignment.centerRight
                                   : Alignment.centerLeft,
                               child: Container(
-                                width: 20,
-                                height: 20,
+                                width: AppMetrics.px20,
+                                height: AppMetrics.px20,
                                 decoration: const BoxDecoration(
                                   color: AppColors.neutral0,
                                   shape: BoxShape.circle,
@@ -1659,17 +1658,17 @@ class _PlaylistFormSheetState extends State<_PlaylistFormSheet> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppMetrics.px8),
                     InkWell(
                       onTap: _saving || _loadingSongs ? null : _chooseSongs,
                       borderRadius: BorderRadius.circular(AppRadius.radius200),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.spacing8),
                         child: Row(
                           children: [
                             Container(
-                              width: 36,
-                              height: 36,
+                              width: AppMetrics.px36,
+                              height: AppMetrics.px36,
                               decoration: const BoxDecoration(
                                 color: AppColors.neutral700,
                                 shape: BoxShape.circle,
@@ -1679,7 +1678,7 @@ class _PlaylistFormSheetState extends State<_PlaylistFormSheet> {
                                 color: AppColors.primary400,
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: AppMetrics.px10),
                             Text(
                               _loadingSongs
                                   ? 'Loading saved songs…'
@@ -1688,7 +1687,7 @@ class _PlaylistFormSheetState extends State<_PlaylistFormSheet> {
                                   : 'Add or remove songs (${_selectedSongs.length})',
                               style: AppTypography.body2.copyWith(
                                 color: AppColors.neutral0,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: AppFontWeight.semiBold,
                               ),
                             ),
                           ],
@@ -1696,7 +1695,7 @@ class _PlaylistFormSheetState extends State<_PlaylistFormSheet> {
                       ),
                     ),
                     if (_selectedSongs.isNotEmpty) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppMetrics.px4),
                       ..._selectedSongs.map(_selectedSongTile),
                     ],
                   ],
@@ -1705,10 +1704,10 @@ class _PlaylistFormSheetState extends State<_PlaylistFormSheet> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.spacing20, AppSpacing.spacing8, AppSpacing.spacing20, AppSpacing.spacing20),
             child: SizedBox(
               width: double.infinity,
-              height: 52,
+              height: AppMetrics.px52,
               child: FilledButton(
                 onPressed: _saving || _loadingSongs ? null : _savePlaylist,
                 style: FilledButton.styleFrom(
@@ -1717,14 +1716,14 @@ class _PlaylistFormSheetState extends State<_PlaylistFormSheet> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadius.radius500),
                   ),
-                  elevation: 3,
+                  elevation: AppElevation.level1,
                 ),
                 child: _saving
                     ? const SizedBox(
-                        width: 20,
-                        height: 20,
+                        width: AppMetrics.px20,
+                        height: AppMetrics.px20,
                         child: CircularProgressIndicator(
-                          strokeWidth: 2,
+                          strokeWidth: AppMetrics.px2,
                           color: AppColors.neutral0,
                         ),
                       )
@@ -1738,7 +1737,7 @@ class _PlaylistFormSheetState extends State<_PlaylistFormSheet> {
   }
 
   Widget _fieldLabel(String label) => Padding(
-    padding: const EdgeInsets.only(bottom: 6),
+    padding: const EdgeInsets.only(bottom: AppSpacing.spacing6),
     child: Text(
       label,
       style: AppTypography.caption.copyWith(color: AppColors.neutral300),
@@ -1751,14 +1750,14 @@ class _PlaylistFormSheetState extends State<_PlaylistFormSheet> {
     counterText: '',
     filled: true,
     fillColor: AppColors.neutral700,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+    contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing14, vertical: AppSpacing.spacing13),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppRadius.radius200),
       borderSide: const BorderSide(color: AppColors.neutral600),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppRadius.radius200),
-      borderSide: const BorderSide(color: AppColors.primary500, width: 1.5),
+      borderSide: const BorderSide(color: AppColors.primary500, width: AppMetrics.px1_5),
     ),
     errorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppRadius.radius200),
@@ -1771,14 +1770,14 @@ class _PlaylistFormSheetState extends State<_PlaylistFormSheet> {
   );
 
   Widget _selectedSongTile(_PlaylistSong song) => Padding(
-    padding: const EdgeInsets.only(top: 8),
+    padding: const EdgeInsets.only(top: AppSpacing.spacing8),
     child: Row(
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.radius100),
           child: SizedBox(
-            width: 36,
-            height: 36,
+            width: AppMetrics.px36,
+            height: AppMetrics.px36,
             child: song.imageUrl.isEmpty
                 ? PlaylistsView._emptyCover()
                 : Image.network(
@@ -1788,20 +1787,20 @@ class _PlaylistFormSheetState extends State<_PlaylistFormSheet> {
                   ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppMetrics.px12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 song.title,
-                maxLines: 1,
+                maxLines: AppLayout.singleLineText,
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.label2.copyWith(color: AppColors.neutral0),
               ),
               Text(
                 song.artist,
-                maxLines: 1,
+                maxLines: AppLayout.singleLineText,
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.caption.copyWith(
                   color: AppColors.neutral300,
@@ -1839,11 +1838,11 @@ class _SongPickerSheetState extends State<_SongPickerSheet> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: MediaQuery.sizeOf(context).height * 0.75,
+      height: MediaQuery.sizeOf(context).height * AppLayout.songPickerHeightFactor,
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 12, 12),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.spacing20, AppSpacing.spacing20, AppSpacing.spacing12, AppSpacing.spacing12),
             child: Row(
               children: [
                 Expanded(
@@ -1916,8 +1915,8 @@ class _SongPickerSheetState extends State<_SongPickerSheet> {
                           AppRadius.radius100,
                         ),
                         child: SizedBox(
-                          width: 40,
-                          height: 40,
+                          width: AppMetrics.px40,
+                          height: AppMetrics.px40,
                           child: song.imageUrl.isEmpty
                               ? PlaylistsView._emptyCover()
                               : Image.network(
